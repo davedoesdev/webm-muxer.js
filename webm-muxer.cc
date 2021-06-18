@@ -11,18 +11,15 @@ extern "C" {
 }
 
 static int main2(int argc, const char** argv) {
-    webm_tools::WebMLiveMuxer muxer;
-    muxer.Init();
-
     // read maximum cluster duration
     uint64_t max_cluster_duration;
     if (emscripten_read_async(reinterpret_cast<unsigned char*>(&max_cluster_duration), sizeof(max_cluster_duration)) != sizeof(max_cluster_duration)) {
         std::cerr << "Failed to read maximum cluster duration" << std::endl;
         return 1;
     }
-    if (max_cluster_duration > 0) {
-        muxer.SetMaxClusterDuration(max_cluster_duration);
-    }
+
+    webm_tools::WebMLiveMuxer muxer;
+    muxer.Init(max_cluster_duration);
 
     // read video width
     int32_t width;
