@@ -38,4 +38,4 @@ libwebm_build/Makefile: libwebm
 	mkdir -p libwebm_build && cd libwebm_build && emcmake cmake ../libwebm
 
 clean:
-	rm -f $(OUTPUTS)
+	rm -rf $(OUTPUTS) libwebm_build
