@@ -1,0 +1,6 @@
+[submodule "webm-tools"]
+	path = webm-tools
+	url = https://github.com/davedoesdev/webm-tools
+[submodule "libwebm"]
+	path = libwebm
+	url = https://github.com/webmproject/libwebm

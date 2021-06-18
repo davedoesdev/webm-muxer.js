@@ -1,16 +1,25 @@
+# Make sure you setup emscripten first:
+#
+# source /path/to/emsdk/emsdk_env.sh
+#
+# Then make with:
+#
+# emmake make
+
 OUTPUTS = webm-muxer.js webm-muxer.wasm
 WEBM_TOOLS = webm-tools/shared
 SOURCES_CC = webm-muxer.cc $(WEBM_TOOLS)/webm_live_muxer.cc $(WEBM_TOOLS)/webm_chunk_writer.cc
 LIBRARY_JS = library.js
+LIBWEBM = libwebm_build/libwebm.a
 
-$(OUTPUTS): $(SOURCES_CC) $(LIBRARY_JS) Makefile
+$(OUTPUTS): $(SOURCES_CC) $(LIBRARY_JS) $(LIBWEBM) Makefile
 	$(CXX) \
 		-O3 \
 		--closure 1 \
 		--std=c++17 \
 		-Iwebm-tools/shared \
 		-Ilibwebm \
-		-Lbuild \
+		-Llibwebm_build \
 		-Wall \
 		-s ASSERTIONS=0 \
 		-s EXIT_RUNTIME=1 \
@@ -21,6 +30,12 @@ $(OUTPUTS): $(SOURCES_CC) $(LIBRARY_JS) Makefile
 		-o $@ \
 		$(SOURCES_CC) \
 		-lwebm
+
+$(LIBWEBM): libwebm_build/Makefile
+	cd libwebm_build && emmake make
+
+libwebm_build/Makefile: libwebm
+	mkdir -p libwebm_build && cd libwebm_build && emcmake cmake ../libwebm
 
 clean:
 	rm -f $(OUTPUTS)
