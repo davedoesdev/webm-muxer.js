@@ -1,5 +1,3 @@
-const webm_muxer = new Worker('./webm-muxer.js');
-
 function onerror(e) {
     console.error(e);
     self.postMessage({
@@ -8,9 +6,7 @@ function onerror(e) {
     });
 }
 
-webm_muxer.onerror = onerror;
-
-let metadata;
+let webm_muxer;
 let first_video_timestamp = null;
 let first_audio_timestamp = null;
 let last_timestamp = -1;
@@ -42,7 +38,7 @@ function send_msg(msg) {
     send_data(msg.data);
 }
 
-function send_metadata() {
+function send_metadata(metadata) {
     const max_cluster_duration = new ArrayBuffer(8);
     new DataView(max_cluster_duration).setBigUint64(0, metadata.max_segment_duration || 0, true);;
     send_data(max_cluster_duration);
@@ -105,25 +101,32 @@ onmessage = function (e) {
 
             break;
 
-        case 'start': 
-            metadata = msg.webm_metadata;
+        case 'start': {
+            const metadata = msg.webm_metadata;
+
+            webm_muxer = new Worker('./webm-muxer.js');
+            webm_muxer.onerror = onerror;
+
+            webm_muxer.onmessage = function (e) {
+                const msg = e.data;
+                switch (msg.type) {
+                    case 'start-stream':
+                        send_metadata(metadata);
+                        break;
+
+                    case 'exit':
+                        self.postMessage(msg);
+                        break;
+
+                    case 'muxed-data':
+                        self.postMessage(msg, [msg.data]);
+                        break;
+                }
+            };
+
             break;
+        }
     }
 };
 
-webm_muxer.onmessage = function (e) {
-    const msg = e.data;
-    switch (msg.type) {
-        case 'start-stream':
-            send_metadata();
-            break;
 
-        case 'exit':
-            self.postMessage(msg);
-            break;
-
-        case 'muxed-data':
-            self.postMessage(msg, [msg.data]);
-            break;
-    }
-};

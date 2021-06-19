@@ -2,8 +2,7 @@ function onerror(e) {
     console.error(e);
 }
 
-const start_el = document.getElementById('start');
-start_el.addEventListener('click', async function () {
+document.getElementById('start').addEventListener('click', async function () {
     this.disabled = true;
 
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -43,6 +42,8 @@ start_el.addEventListener('click', async function () {
     audio_worker.onerror = onerror;
     audio_worker.onmessage = relay_data;
 
+    let buffer;
+
     const webm_worker = new Worker('./webm-worker.js');
     webm_worker.onerror = onerror;
     webm_worker.onmessage = ev => {
@@ -62,13 +63,14 @@ start_el.addEventListener('click', async function () {
                     type: 'start',
                     readable: video_readable,
                     config: {
-                        codec: 'avc1.42E01E',
+                        //codec: 'avc1.42E01E',
+                        codec: 'vp09.00.10.08',
                         bitrate: 2500 * 1000,
                         width: video_settings.width,
-                        height: video_settings.height,
-                        avc: {
+                        height: video_settings.height
+                        /*avc: {
                             format: 'annexb'
-                        }
+                        }*/
                     }
                 }, [video_readable]);
 
@@ -87,7 +89,7 @@ start_el.addEventListener('click', async function () {
                 break;
 
             case 'muxed-data':
-                console.log("GOT MUXED DATA", msg.data);
+                buffer.appendBuffer(msg.data);
                 break;
 
             case 'error':
@@ -96,21 +98,31 @@ start_el.addEventListener('click', async function () {
         }
     };
 
-    webm_worker.postMessage({
-        type: 'start',
-        webm_metadata: {
-            max_segment_duration: BigInt(1000000000),
-            video: {
-                width: video_settings.width,
-                height: video_settings.height,
-                frame_rate: video_settings.frameRate,
-                codec_id: 'V_MPEG4/ISO/AVC'
-            },
-            audio: {
-                sample_rate: audio_settings.sampleRate,
-                channles: audio_settings.channelCount,
-                codec_id: 'A_OPUS'
+    const video = document.getElementById('video');
+    const source = new MediaSource();
+    video.src = URL.createObjectURL(source);
+    source.addEventListener('sourceopen', function () {
+        video.play();
+
+        buffer = this.addSourceBuffer('video/webm; codecs=vp9,opus');
+
+        webm_worker.postMessage({
+            type: 'start',
+            webm_metadata: {
+                max_segment_duration: BigInt(1000000000),
+                video: {
+                    width: video_settings.width,
+                    height: video_settings.height,
+                    frame_rate: video_settings.frameRate,
+                    //codec_id: 'V_MPEG4/ISO/AVC'
+                    codec_id: 'V_VP9'
+                },
+                audio: {
+                    sample_rate: audio_settings.sampleRate,
+                    channels: audio_settings.channelCount,
+                    codec_id: 'A_OPUS'
+                }
             }
-        }
+        });
     });
 });
