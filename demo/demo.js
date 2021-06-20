@@ -43,6 +43,9 @@ document.getElementById('start').addEventListener('click', async function () {
     audio_worker.onmessage = relay_data;
 
     let buffer;
+    let queue = [];
+    const key_frame_interval = 10;
+    const buffer_delay = 2;
 
     const webm_worker = new Worker('./webm-worker.js');
     webm_worker.onerror = onerror;
@@ -62,6 +65,7 @@ document.getElementById('start').addEventListener('click', async function () {
                 video_worker.postMessage({
                     type: 'start',
                     readable: video_readable,
+                    key_frame_interval,
                     config: {
                         //codec: 'avc1.42E01E',
                         codec: 'vp09.00.10.08',
@@ -89,7 +93,10 @@ document.getElementById('start').addEventListener('click', async function () {
                 break;
 
             case 'muxed-data':
-                buffer.appendBuffer(msg.data);
+                queue.push(msg.data);
+                if (!buffer.updating) {
+                    remove_append();
+                }
                 break;
 
             case 'error':
@@ -98,13 +105,28 @@ document.getElementById('start').addEventListener('click', async function () {
         }
     };
 
+    function remove_append() {
+        const range = buffer.buffered;
+        if ((video.currentTime === 0) &&
+            ((buffer_delay === 0) ||
+             ((range.length > 0) && (range.end(0) > buffer_delay)))) {
+            video.poster = '';
+            video.play();
+        }
+        const check = video.currentTime - key_frame_interval * 2;
+        if ((range.length > 0) && (range.start(0) < check)) {
+            buffer.remove(0, check);
+        } else if (queue.length > 0) {
+            buffer.appendBuffer(queue.shift());
+        }
+    }
+
     const video = document.getElementById('video');
     const source = new MediaSource();
     video.src = URL.createObjectURL(source);
     source.addEventListener('sourceopen', function () {
-        video.play();
-
         buffer = this.addSourceBuffer('video/webm; codecs=vp9,opus');
+        buffer.addEventListener('updateend', remove_append);
 
         webm_worker.postMessage({
             type: 'start',

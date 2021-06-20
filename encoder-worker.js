@@ -13,6 +13,7 @@ onmessage = async function (e) {
             try {
                 const Encoder = msg.audio ? AudioEncoder : VideoEncoder;
                 const type = msg.audio ? 'audio-data' : 'video-data';
+                const key_frame_interval = msg.key_frame_interval * 1000;
                 const encoder = new Encoder({
                     output: chunk => {
                         //const data = new ArrayBuffer(chunk.byteLength);
@@ -27,17 +28,27 @@ onmessage = async function (e) {
                     },
                     error: onerror
                 });
-                
                 await encoder.configure(msg.config);
 
                 const reader = msg.readable.getReader();
+                let last_key_frame = -1;
 
                 while (true) {
                     const result = await reader.read();
                     if (result.done) {
                         break;
                     }
-                    encoder.encode(result.value);
+                    if (msg.audio) {
+                        encoder.encode(result.value);
+                    } else {
+                        const now = Date.now();
+                        const keyFrame = (key_frame_interval > 0) &&
+                                         ((now - last_key_frame) > key_frame_interval);
+                        if (keyFrame) {
+                            last_key_frame = now;
+                        }
+                        encoder.encode(result.value, { keyFrame });
+                    }
                     result.value.close();
                 }
             } catch (ex) {
