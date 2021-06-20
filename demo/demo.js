@@ -5,6 +5,9 @@ function onerror(e) {
 document.getElementById('start').addEventListener('click', async function () {
     this.disabled = true;
 
+    const info = document.getElementById('info');
+    info.innerText = 'Buffering';
+
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: {
@@ -107,6 +110,9 @@ document.getElementById('start').addEventListener('click', async function () {
 
     function remove_append() {
         const range = buffer.buffered;
+        if (range.length > 0) {
+            info.innerText = `Buffered ${range.start(0)} .. ${range.end(0)}`;
+        }
         if ((video.currentTime === 0) &&
             ((buffer_delay === 0) ||
              ((range.length > 0) && (range.end(0) > buffer_delay)))) {
