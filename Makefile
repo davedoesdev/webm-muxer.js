@@ -9,10 +9,11 @@
 OUTPUTS = webm-muxer.js webm-muxer.wasm
 WEBM_TOOLS = webm-tools/shared
 SOURCES_CC = webm-muxer.cc $(WEBM_TOOLS)/webm_live_muxer.cc $(WEBM_TOOLS)/webm_chunk_writer.cc
+HEADERS = $(WEBM_TOOLS)/webm_live_muxer.h
 LIBRARY_JS = library.js
 LIBWEBM = libwebm_build/libwebm.a
 
-$(OUTPUTS): $(SOURCES_CC) $(LIBRARY_JS) $(LIBWEBM) Makefile
+$(OUTPUTS): $(SOURCES_CC) $(LIBRARY_JS) $(LIBWEBM) $(HEADERS) Makefile
 	$(CXX) \
 		-O3 \
 		--closure 1 \
