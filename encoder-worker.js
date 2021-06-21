@@ -22,6 +22,7 @@ onmessage = async function (e) {
                         self.postMessage({
                             type,
                             timestamp: chunk.timestamp,
+                            duration: chunk.duration,
                             is_key: msg.audio || chunk.type === 'key',
                             data
                         }, [data]);

@@ -134,12 +134,20 @@ static int main2(int argc, const char** argv) {
         auto is_key = buf[1] != 0;
 
         // read timestamp
-        int64_t timestamp;
+        uint64_t timestamp;
         if (emscripten_read_async(reinterpret_cast<unsigned char*>(&timestamp), sizeof(timestamp)) != sizeof(timestamp)) {
             std::cerr << "Failed to read timestamp" << std::endl;
             return 1;
         }
         timestamp *= 1000;
+
+        // read duration
+        uint64_t duration;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&duration), sizeof(duration)) != sizeof(duration)) {
+            std::cerr << "Failed to read duration" << std::endl;
+            return 1;
+        }
+        duration *= 1000;
 
         // read frame data
         len = emscripten_read_async(buf, sizeof(buf));
@@ -154,9 +162,9 @@ static int main2(int argc, const char** argv) {
 
         // mux frame data
         if (type == 0) {
-            r = muxer.WriteVideoFrame(buf, len, timestamp, is_key);
+            r = muxer.WriteVideoFrame(buf, len, timestamp, duration, is_key);
         } else {
-            r = muxer.WriteAudioFrame(buf, len, timestamp, is_key);
+            r = muxer.WriteAudioFrame(buf, len, timestamp, duration, is_key);
         }
         if (r != webm_tools::WebMLiveMuxer::kSuccess) {
             std::cerr << "Failed to mux frame: " << r << std::endl;

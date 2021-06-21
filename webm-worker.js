@@ -26,15 +26,19 @@ function send_msg(msg) {
     last_timestamp = msg.timestamp;
 
     const header = new ArrayBuffer(2);
-    const dv = new DataView(header);
-    dv.setUint8(0, msg.type === 'video-data' ? 0 : 1);
-    dv.setUint8(1, msg.is_key ? 1 : 0);
+    const view = new DataView(header);
+    view.setUint8(0, msg.type === 'video-data' ? 0 : 1);
+    view.setUint8(1, msg.is_key ? 1 : 0);
 
-    const ts = new ArrayBuffer(8);
-    new DataView(ts).setBigInt64(0, BigInt(msg.timestamp), true);
+    const timestamp = new ArrayBuffer(8);
+    new DataView(timestamp).setBigUint64(0, BigInt(msg.timestamp), true);
+
+    const duration = new ArrayBuffer(8);
+    new DataView(duration).setBigUint64(0, BigInt(msg.duration || 0), true);
 
     send_data(header);
-    send_data(ts);
+    send_data(timestamp);
+    send_data(duration);
     send_data(msg.data);
 }
 
