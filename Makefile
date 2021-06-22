@@ -13,6 +13,8 @@ HEADERS = $(WEBM_TOOLS)/webm_live_muxer.h
 LIBRARY_JS = library.js
 LIBWEBM = libwebm_build/libwebm.a
 
+all: $(OUTPUTS)
+
 $(OUTPUTS): $(SOURCES_CC) $(LIBRARY_JS) $(LIBWEBM) $(HEADERS) Makefile
 	$(CXX) \
 		-O3 \
