@@ -82,8 +82,8 @@ document.getElementById('start').addEventListener('click', async function () {
                 }, [video_readable]);
 
                 audio_worker.postMessage({
-                    audio: true,
                     type: 'start',
+                    audio: true,
                     readable: audio_readable,
                     config: {
                         codec: 'opus',

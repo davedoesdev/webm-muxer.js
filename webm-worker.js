@@ -44,7 +44,7 @@ function send_msg(msg) {
 
 function send_metadata(metadata) {
     const max_cluster_duration = new ArrayBuffer(8);
-    new DataView(max_cluster_duration).setBigUint64(0, metadata.max_segment_duration || 0, true);;
+    new DataView(max_cluster_duration).setBigUint64(0, metadata.max_segment_duration || BigInt(0), true);;
     send_data(max_cluster_duration);
 
     const width = new ArrayBuffer(4);

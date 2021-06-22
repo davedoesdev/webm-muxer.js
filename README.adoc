@@ -1,0 +1,71 @@
+= WebM muxer for WebCodecs
+
+https://www.w3.org/TR/webcodecs/[WebCodecs] encodes audio and video but leaves multiplexing the
+output into a container to the application. This project provides a way for your application
+to get its audio and video tracks into a WebM container.
+
+Under the hood it uses https://github.com/webmproject/libwebm/[libwebm] and
+https://github.com/webmproject/webm-tools/[webmtools] compiled to Web Assembly using
+https://emscripten.org/[Emscripten].
+
+There are two Javascript files which you should run in Web Workers:
+
+link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`] and encodes it using WebCodecs https://www.w3.org/TR/webcodecs/#videoencoder-interface[`VideoEncoder`] or https://www.w3.org/TR/webcodecs/#audioencoder-interface[`AudioEncoder`]. You should this in run two Workers, one for video and one for audio.
+
+link:webm-worker.js[]:: Takes output from `encoder-worker.js` and muxes it into WebM container format.
+
+Your application should in general follow the procedure described below. A example is availble in
+the link:demo[] directory.
+
+. Create your https://www.w3.org/TR/mediacapture-streams/#mediastreamtrack[`MediaStreamTrack`]s (e.g. using https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia[`getUserMedia()`].
+
+. Create two https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`]s, one for your video track and one for your audio track.
+
+. Create a Web Worker using `webm-worker.js`.
+
+. Create two Web Workers using `encoder-worker.js`, one for video and one for audio.
+
+. When your application receives a message from the Worker running `webm-worker.js`:
+
+* If the message's `type` property is `start-stream` then:
+
+** Send a message to the Worker running `encoder-worker.js` for video with the following properties:
+[horizontal]
+`type`:: `"start"`
+`readable`:: The `readable` property of the `MediaStreamTrackProcessor` for the video. You'll need to transfer this to the worker.
+`key_frame_interval`:: How often to generate a key frame, in seconds. Use `0` for no key frames.
+`config`:: The https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig[`VideoEncoderConfig`] for encoding the video.
+
+** Send a message to the Worker running `encoder-worker.js` for audio with the following properties:
+[horizontal]
+`type`:: `"start"`
+`audio`:: `true`
+`readable`:: The `readable` property of the `MediaStreamTrackProcessor` for the audio. You'll need to transfer this to the worker.
+`config`:: The https://www.w3.org/TR/webcodecs/#dictdef-audioencoderconfig[`AudioEncoderConfig`] for encoding the audio.
+
+* If the message's `type` property is `muxed-data` then:
+
+** The message's `data` property contains the next chunk of the WebM output, which your application
+can use as it likes.
+
+. When your application receives a message from the Workers running `encoder-worker.js`, send it onto
+the Worker running `webm-worker.js`. You should transfer the `data` property.
+
+. Send a message to the Worker running `webm-worker.js` with the following properties:
+[horizontal]
+`type`:: `"start"`
+`webm_metadata`:: An object with the following properties:
+[horizontal]
+`max_segment_duration`::: Desired length in nanoseconds of each WebM output chunk. Use a `BigInt` to specify this.
+`video`::: An object with the following properties:
+[horizontal]
+`width`:::: Width of the encoded video in pixels.
+`height`:::: Height of the encoded video in pixels.
+`frame_rate`:::: Number of frames per second in the video. This property is optional.
+`codec_id`:::: WebM codec ID to describe the video encoding method, e.g. `"V_VP9"` or `"V_MPEG4/ISO/AVC"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
+`audio`::: An object with the following properties:
+[horizontal]
+`sample_rate`:::: Number of audio samples per second in the encoded audio.
+`channels`:::: Number of channels in the encoded audio.
+`bit_depth`:::: Number of bits in each sample. This property is usually used only for PCM encoded audio.
+`codec_id`:::: WebM codec ID to describe the audio encoding method, e.g. `"A_OPUS"` or `"A_PCM/FLOAT/IEEE"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
