@@ -14,8 +14,8 @@ link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-
 
 link:webm-worker.js[]:: Takes output from `encoder-worker.js` and muxes it into WebM container format.
 
-Your application should in general follow the procedure described below. A example is availble in
-the link:demo[] directory.
+Your application should in general follow the procedure described below. A example is available in
+link:demo.js[] and link:demo.html[].
 
 . Create your https://www.w3.org/TR/mediacapture-streams/#mediastreamtrack[`MediaStreamTrack`]s (e.g. using https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia[`getUserMedia()`].
 
