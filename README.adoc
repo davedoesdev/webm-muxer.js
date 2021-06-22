@@ -55,15 +55,18 @@ the Worker running `webm-worker.js`. You should transfer the `data` property.
 [horizontal]
 `type`:: `"start"`
 `webm_metadata`:: An object with the following properties:
++
 [horizontal]
 `max_segment_duration`::: Desired length in nanoseconds of each WebM output chunk. Use a `BigInt` to specify this.
 `video`::: An object with the following properties:
++
 [horizontal]
 `width`:::: Width of the encoded video in pixels.
 `height`:::: Height of the encoded video in pixels.
 `frame_rate`:::: Number of frames per second in the video. This property is optional.
 `codec_id`:::: WebM codec ID to describe the video encoding method, e.g. `"V_VP9"` or `"V_MPEG4/ISO/AVC"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
 `audio`::: An object with the following properties:
++
 [horizontal]
 `sample_rate`:::: Number of audio samples per second in the encoded audio.
 `channels`:::: Number of channels in the encoded audio.
