@@ -10,7 +10,7 @@ https://emscripten.org/[Emscripten].
 
 There are two Javascript files which you should run in Web Workers:
 
-link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`] and encodes it using WebCodecs https://www.w3.org/TR/webcodecs/#videoencoder-interface[`VideoEncoder`] or https://www.w3.org/TR/webcodecs/#audioencoder-interface[`AudioEncoder`]. You should this in run two Workers, one for video and one for audio.
+link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`] and encodes it using WebCodecs https://www.w3.org/TR/webcodecs/#videoencoder-interface[`VideoEncoder`] or https://www.w3.org/TR/webcodecs/#audioencoder-interface[`AudioEncoder`]. You should run this in up to two Workers, one for video and one for audio.
 
 link:webm-worker.js[]:: Takes output from `encoder-worker.js` and muxes it into WebM container format.
 
@@ -19,11 +19,11 @@ link:demo.js[] and link:demo.html[].
 
 . Create your https://www.w3.org/TR/mediacapture-streams/#mediastreamtrack[`MediaStreamTrack`]s (e.g. using https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia[`getUserMedia()`].
 
-. Create two https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`]s, one for your video track and one for your audio track.
+. Create up to two https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`]s, one for your video track and one for your audio track.
 
 . Create a Web Worker using `webm-worker.js`.
 
-. Create two Web Workers using `encoder-worker.js`, one for video and one for audio.
+. Create up to two Web Workers using `encoder-worker.js`, one for video and one for audio.
 
 . When your application receives a message from the Worker running `webm-worker.js`:
 
@@ -48,7 +48,7 @@ link:demo.js[] and link:demo.html[].
 ** The message's `data` property contains the next chunk of the WebM output, which your application
 can use as it likes.
 
-. When your application receives a message from the Workers running `encoder-worker.js`, send it onto
+. When your application receives a message from one of the Workers running `encoder-worker.js`, send it onto
 the Worker running `webm-worker.js`. You should transfer the `data` property.
 
 . Send a message to the Worker running `webm-worker.js` with the following properties:
@@ -58,14 +58,14 @@ the Worker running `webm-worker.js`. You should transfer the `data` property.
 +
 [horizontal]
 `max_segment_duration`::: Desired length in nanoseconds of each WebM output chunk. Use a `BigInt` to specify this.
-`video`::: An object with the following properties:
+`video`::: If you have a video track, an object with the following properties:
 +
 [horizontal]
 `width`:::: Width of the encoded video in pixels.
 `height`:::: Height of the encoded video in pixels.
 `frame_rate`:::: Number of frames per second in the video. This property is optional.
 `codec_id`:::: WebM codec ID to describe the video encoding method, e.g. `"V_VP9"` or `"V_MPEG4/ISO/AVC"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
-`audio`::: An object with the following properties:
+`audio`::: If you have an audio track, an object with the following properties:
 +
 [horizontal]
 `sample_rate`:::: Number of audio samples per second in the encoded audio.

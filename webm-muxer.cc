@@ -4,6 +4,9 @@
 const int buf_size = 16 * 1024 * 1024;
 static unsigned char buf[buf_size];
 
+const int video_flag = 0b01;
+const int audio_flag = 0b10;
+
 extern "C" {
     int emscripten_read_async(unsigned char* buf, int size);
     int emscripten_write(unsigned char* buf, int size);
@@ -21,77 +24,93 @@ static int main2(int argc, const char** argv) {
     webm_tools::WebMLiveMuxer muxer;
     muxer.Init(max_cluster_duration);
 
-    // read video width
-    int32_t width;
-    if (emscripten_read_async(reinterpret_cast<unsigned char*>(&width), sizeof(width)) != sizeof(width)) {
-        std::cerr << "Failed to read video width" << std::endl;
+    // read flags
+    uint8_t flags;
+    if (emscripten_read_async(reinterpret_cast<unsigned char*>(&flags), sizeof(flags)) != sizeof(flags)) {
+        std::cerr << "Failed to read flags" << std::endl;
         return 1;
     }
 
-    // read video height
-    int32_t height;
-    if (emscripten_read_async(reinterpret_cast<unsigned char*>(&height), sizeof(height)) != sizeof(height)) {
-        std::cerr << "Failed to read video height" << std::endl;
+    if (!(flags & video_flag) && !(flags & audio_flag)) {
+        std::cerr << "No tracks to add" << std::endl;
         return 1;
     }
 
-    // read video frame rate
-    static_assert(sizeof(float) == 4);
-    float frame_rate;
-    if (emscripten_read_async(reinterpret_cast<unsigned char*>(&frame_rate), sizeof(frame_rate)) != sizeof(frame_rate)) {
-        std::cerr << "Failed to read video frame rate" << std::endl;
-        return 1;
+    if (flags & video_flag) {
+        // read video width
+        int32_t width;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&width), sizeof(width)) != sizeof(width)) {
+            std::cerr << "Failed to read video width" << std::endl;
+            return 1;
+        }
+
+        // read video height
+        int32_t height;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&height), sizeof(height)) != sizeof(height)) {
+            std::cerr << "Failed to read video height" << std::endl;
+            return 1;
+        }
+
+        // read video frame rate
+        static_assert(sizeof(float) == 4);
+        float frame_rate;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&frame_rate), sizeof(frame_rate)) != sizeof(frame_rate)) {
+            std::cerr << "Failed to read video frame rate" << std::endl;
+            return 1;
+        }
+
+        // read video codec ID
+        auto len = emscripten_read_async(buf, sizeof(buf) - 1);
+        if ((len <= 0) || (len > (sizeof(buf) - 1))) {
+            std::cerr << "Failed to read video codec ID" << std::endl;
+            return 1;
+        }
+        buf[len] = '\0';
+
+        // add video track
+        auto r = muxer.AddVideoTrack(width, height, reinterpret_cast<char*>(buf), frame_rate);
+        if (r < 0) {
+            std::cerr << "Failed to add video track: " << r << std::endl;
+            return 1;
+        }
     }
 
-    // read video codec ID
-    auto len = emscripten_read_async(buf, sizeof(buf) - 1);
-    if ((len <= 0) || (len > (sizeof(buf) - 1))) {
-        std::cerr << "Failed to read video codec ID" << std::endl;
-        return 1;
-    }
-    buf[len] = '\0';
+    if (flags & audio_flag) {
+        // read audio sample rate
+        int32_t sample_rate;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&sample_rate), sizeof(sample_rate)) != sizeof(sample_rate)) {
+            std::cerr << "Failed to read audio sample rate" << std::endl;
+            return 1;
+        }
 
-    // add video track
-    auto r = muxer.AddVideoTrack(width, height, reinterpret_cast<char*>(buf), frame_rate);
-    if (r < 0) {
-        std::cerr << "Failed to add video track: " << r << std::endl;
-        return 1;
-    }
+        // read number of audio channels
+        int32_t channels;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&channels), sizeof(channels)) != sizeof(channels)) {
+            std::cerr << "Failed to read number of audio channels" << std::endl;
+            return 1;
+        }
 
-    // read audio sample rate
-    int32_t sample_rate;
-    if (emscripten_read_async(reinterpret_cast<unsigned char*>(&sample_rate), sizeof(sample_rate)) != sizeof(sample_rate)) {
-        std::cerr << "Failed to read audio sample rate" << std::endl;
-        return 1;
-    }
+        // read audio bit depth
+        int32_t bit_depth;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&bit_depth), sizeof(bit_depth)) != sizeof(bit_depth)) {
+            std::cerr << "Failed to read audio bit depth" << std::endl;
+            return 1;
+        }
 
-    // read number of audio channels
-    int32_t channels;
-    if (emscripten_read_async(reinterpret_cast<unsigned char*>(&channels), sizeof(channels)) != sizeof(channels)) {
-        std::cerr << "Failed to read number of audio channels" << std::endl;
-        return 1;
-    }
+        // read audio codec ID
+        auto len = emscripten_read_async(buf, sizeof(buf) - 1);
+        if ((len <= 0) || (len > (sizeof(buf) - 1))) {
+            std::cerr << "Failed to read video codec ID" << std::endl;
+            return 1;
+        }
+        buf[len] = '\0';
 
-    // read audio bit depth
-    int32_t bit_depth;
-    if (emscripten_read_async(reinterpret_cast<unsigned char*>(&bit_depth), sizeof(bit_depth)) != sizeof(bit_depth)) {
-        std::cerr << "Failed to read audio bit depth" << std::endl;
-        return 1;
-    }
-
-    // read audio codec ID
-    len = emscripten_read_async(buf, sizeof(buf) - 1);
-    if ((len <= 0) || (len > (sizeof(buf) - 1))) {
-        std::cerr << "Failed to read video codec ID" << std::endl;
-        return 1;
-    }
-    buf[len] = '\0';
-
-    // add audio track
-    r = muxer.AddAudioTrack(sample_rate, channels, nullptr, 0, reinterpret_cast<char*>(buf), bit_depth);
-    if (r < 0) {
-        std::cerr << "Failed to add audio track: " << r << std::endl;
-        return 1;
+        // add audio track
+        auto r = muxer.AddAudioTrack(sample_rate, channels, nullptr, 0, reinterpret_cast<char*>(buf), bit_depth);
+        if (r < 0) {
+            std::cerr << "Failed to add audio track: " << r << std::endl;
+            return 1;
+        }
     }
 
     while (true) {
@@ -103,7 +122,7 @@ static int main2(int argc, const char** argv) {
                 // TODO: Maybe dynamically allocate
                 return 1;
             }
-            r = muxer.ReadChunk(sizeof(buf), buf);
+            auto r = muxer.ReadChunk(sizeof(buf), buf);
             if (r != webm_tools::WebMLiveMuxer::kSuccess) {
                 std::cerr << "Failed to get muxed chunk" << std::endl;
                 return 1;
@@ -115,7 +134,7 @@ static int main2(int argc, const char** argv) {
         }
 
         // read frame data type (0 = video, 1 = audio) and whether it's a key frame
-        len = emscripten_read_async(buf, 2);
+        auto len = emscripten_read_async(buf, 2);
         if (len == 0) {
             std::cout << "End of input" << std::endl;
             break;
@@ -161,6 +180,7 @@ static int main2(int argc, const char** argv) {
         }
 
         // mux frame data
+        int r;
         if (type == 0) {
             r = muxer.WriteVideoFrame(buf, len, timestamp, duration, is_key);
         } else {

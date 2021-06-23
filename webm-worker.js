@@ -1,3 +1,6 @@
+const video_flag = 0b01;
+const audio_flag = 0b10;
+
 function onerror(e) {
     console.error(e);
     self.postMessage({
@@ -6,6 +9,7 @@ function onerror(e) {
     });
 }
 
+let metadata;
 let webm_muxer;
 let first_video_timestamp = null;
 let first_audio_timestamp = null;
@@ -47,33 +51,41 @@ function send_metadata(metadata) {
     new DataView(max_cluster_duration).setBigUint64(0, metadata.max_segment_duration || BigInt(0), true);;
     send_data(max_cluster_duration);
 
-    const width = new ArrayBuffer(4);
-    new DataView(width).setInt32(0, metadata.video.width, true);
-    send_data(width);
+    const flags = new ArrayBuffer(1);
+    new DataView(flags).setUint8(0,(metadata.video ? video_flag : 0) | (metadata.audio ? audio_flag : 0), true);
+    send_data(flags);
 
-    const height = new ArrayBuffer(4);
-    new DataView(height).setInt32(0, metadata.video.height, true);
-    send_data(height);
+    if (metadata.video) {
+        const width = new ArrayBuffer(4);
+        new DataView(width).setInt32(0, metadata.video.width, true);
+        send_data(width);
 
-    const frame_rate = new ArrayBuffer(4);
-    new DataView(frame_rate).setFloat32(0, metadata.video.frame_rate || 0, true);
-    send_data(frame_rate);
+        const height = new ArrayBuffer(4);
+        new DataView(height).setInt32(0, metadata.video.height, true);
+        send_data(height);
 
-    send_data(new TextEncoder().encode(metadata.video.codec_id).buffer);
+        const frame_rate = new ArrayBuffer(4);
+        new DataView(frame_rate).setFloat32(0, metadata.video.frame_rate || 0, true);
+        send_data(frame_rate);
 
-    const sample_rate = new ArrayBuffer(4);
-    new DataView(sample_rate).setInt32(0, metadata.audio.sample_rate, true);
-    send_data(sample_rate);
+        send_data(new TextEncoder().encode(metadata.video.codec_id).buffer);
+    }
 
-    const channels = new ArrayBuffer(4);
-    new DataView(channels).setInt32(0, metadata.audio.channels, true);
-    send_data(channels);
+    if (metadata.audio) {
+        const sample_rate = new ArrayBuffer(4);
+        new DataView(sample_rate).setInt32(0, metadata.audio.sample_rate, true);
+        send_data(sample_rate);
 
-    const bit_depth = new ArrayBuffer(4);
-    new DataView(bit_depth).setInt32(0, metadata.audio.bit_depth || 0, true);
-    send_data(bit_depth);
+        const channels = new ArrayBuffer(4);
+        new DataView(channels).setInt32(0, metadata.audio.channels, true);
+        send_data(channels);
 
-    send_data(new TextEncoder().encode(metadata.audio.codec_id).buffer);
+        const bit_depth = new ArrayBuffer(4);
+        new DataView(bit_depth).setInt32(0, metadata.audio.bit_depth || 0, true);
+        send_data(bit_depth);
+
+        send_data(new TextEncoder().encode(metadata.audio.codec_id).buffer);
+    }
 
     self.postMessage({type: 'start-stream'});
 }
@@ -82,8 +94,7 @@ onmessage = function (e) {
     const msg = e.data;
     switch (msg.type) {
         case 'video-data':
-        case 'audio-data':
-            if (msg.type === 'video-data') {
+            if (metadata.video) {
                 if (first_video_timestamp === null) {
                     first_video_timestamp = msg.timestamp;
                 }
@@ -94,19 +105,25 @@ onmessage = function (e) {
                     send_msg(queued_audio.shift());
                 }
                 send_msg(msg);
-            } else {
+            }
+            break;
+
+        case 'audio-data':
+            if (metadata.audio) {
                 if (first_audio_timestamp === null) {
                     first_audio_timestamp = msg.timestamp;
                 }
                 msg.timestamp -= first_audio_timestamp;
-
-                queued_audio.push(msg);
+                if (metadata.video) {
+                    queued_audio.push(msg);
+                } else {
+                    send_msg(msg);
+                }
             }
-
             break;
 
         case 'start': {
-            const metadata = msg.webm_metadata;
+            metadata = msg.webm_metadata;
 
             webm_muxer = new Worker('./webm-muxer.js');
             webm_muxer.onerror = onerror;

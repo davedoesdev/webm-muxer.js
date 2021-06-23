@@ -128,8 +128,11 @@ document.getElementById('start').addEventListener('click', async function () {
     }
 
     const video = document.getElementById('video');
+    video.onerror = () => onerror(video.error);
+
     const source = new MediaSource();
     video.src = URL.createObjectURL(source);
+
     source.addEventListener('sourceopen', function () {
         buffer = this.addSourceBuffer('video/webm; codecs=vp9,opus');
         buffer.addEventListener('updateend', remove_append);
