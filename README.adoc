@@ -8,14 +8,16 @@ Under the hood it uses https://github.com/webmproject/libwebm/[libwebm] and
 https://github.com/webmproject/webm-tools/[webmtools] compiled to Web Assembly using
 https://emscripten.org/[Emscripten].
 
-There are two Javascript files which you should run in Web Workers:
+You can see a demo https://rawgit-now.netlify.app/davedoesdev/webm-muxer.js/main/demo.html[here].
+The source code for the demo is available in link:demo.html[] and link:demo.js[].
+
+In your application, there are two Javascript files which you should run in Web Workers:
 
 link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`] and encodes it using WebCodecs https://www.w3.org/TR/webcodecs/#videoencoder-interface[`VideoEncoder`] or https://www.w3.org/TR/webcodecs/#audioencoder-interface[`AudioEncoder`]. You should run this in up to two Workers, one for video and one for audio.
 
 link:webm-worker.js[]:: Takes output from `encoder-worker.js` and muxes it into WebM container format.
 
-Your application should in general follow the procedure described below. An example is available in
-link:demo.js[] and link:demo.html[].
+Your application should in general follow the procedure described below.
 
 . Create your https://www.w3.org/TR/mediacapture-streams/#mediastreamtrack[`MediaStreamTrack`]s (e.g. using https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia[`getUserMedia()`].
 
