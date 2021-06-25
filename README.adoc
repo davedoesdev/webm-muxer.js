@@ -8,7 +8,8 @@ Under the hood it uses https://github.com/webmproject/libwebm/[libwebm] and
 https://github.com/webmproject/webm-tools/[webmtools] compiled to Web Assembly using
 https://emscripten.org/[Emscripten].
 
-You can see a demo https://rawgit-now.netlify.app/davedoesdev/webm-muxer.js/main/demo.html[here].
+You can see a demo https://rawgit-now.netlify.app/davedoesdev/webm-muxer.js/main/demo.html[here]
+(tested on Chrome 91 Linux with `#enable-experimental-web-platform-features`).
 The source code for the demo is available in link:demo.html[] and link:demo.js[].
 
 In your application, there are two Javascript files which you should run in Web Workers:
