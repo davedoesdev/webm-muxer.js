@@ -2,7 +2,15 @@ function onerror(e) {
     console.error(e);
 }
 
-document.getElementById('start').addEventListener('click', async function () {
+const start_el = document.getElementById('start');
+const stop_el = document.getElementById('stop');
+let webm_worker;
+
+const video = document.getElementById('video');
+video.onerror = () => onerror(video.error);
+const poster = video.poster;
+
+start_el.addEventListener('click', async function () {
     this.disabled = true;
 
     const info = document.getElementById('info');
@@ -50,7 +58,7 @@ document.getElementById('start').addEventListener('click', async function () {
     const key_frame_interval = 10;
     const buffer_delay = 2;
 
-    const webm_worker = new Worker('./webm-worker.js');
+    webm_worker = new Worker('./webm-worker.js');
     webm_worker.onerror = onerror;
     webm_worker.onmessage = ev => {
         const msg = ev.data;
@@ -59,9 +67,17 @@ document.getElementById('start').addEventListener('click', async function () {
                 if (msg.code !== 0) {
                     onerror(`muxer exited with status ${msg.code}`);
                 }
+                video_track.stop();
+                audio_track.stop();
                 webm_worker.terminate();
                 video_worker.terminate();
                 audio_worker.terminate();
+                video.pause();
+                video.src = '';
+                video.currentTime = 0;
+                video.poster = poster;
+                info.innerText = '';
+                start_el.disabled = false;
                 break;
 
             case 'start-stream':
@@ -92,6 +108,8 @@ document.getElementById('start').addEventListener('click', async function () {
                         numberOfChannels: audio_settings.channelCount
                     }
                 }, [audio_readable]);
+
+                stop_el.disabled = false;
 
                 break;
 
@@ -127,9 +145,6 @@ document.getElementById('start').addEventListener('click', async function () {
         }
     }
 
-    const video = document.getElementById('video');
-    video.onerror = () => onerror(video.error);
-
     const source = new MediaSource();
     video.src = URL.createObjectURL(source);
 
@@ -139,6 +154,7 @@ document.getElementById('start').addEventListener('click', async function () {
 
         webm_worker.postMessage({
             type: 'start',
+            //webm_destination: 'destination-test.js',
             webm_metadata: {
                 max_segment_duration: BigInt(1000000000),
                 video: {
@@ -156,4 +172,9 @@ document.getElementById('start').addEventListener('click', async function () {
             }
         });
     });
+});
+
+stop_el.addEventListener('click', async function () {
+    this.disabled = true;
+    webm_worker.postMessage({ type: 'end' });
 });

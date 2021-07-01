@@ -124,27 +124,42 @@ onmessage = function (e) {
 
         case 'start': {
             metadata = msg.webm_metadata;
+            delete msg.webm_metadata;
 
             webm_muxer = new Worker('./webm-muxer.js');
             webm_muxer.onerror = onerror;
 
             webm_muxer.onmessage = function (e) {
-                const msg = e.data;
-                switch (msg.type) {
+                const msg2 = e.data;
+                switch (msg2.type) {
+                    case 'ready':
+                        webm_muxer.postMessage(msg);
+                        break;
+
                     case 'start-stream':
                         send_metadata(metadata);
                         break;
 
                     case 'exit':
-                        self.postMessage(msg);
+                        webm_muxer.terminate();
+                        self.postMessage(msg2);
                         break;
 
                     case 'muxed-data':
-                        self.postMessage(msg, [msg.data]);
+                        self.postMessage(msg2, [msg2.data]);
+                        break;
+
+                    default:
+                        self.postMessage(msg2, msg2.transfer);
                         break;
                 }
             };
 
+            break;
+        }
+
+        case 'end': {
+            webm_muxer.postMessage(msg);
             break;
         }
     }
