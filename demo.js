@@ -102,6 +102,7 @@ start_el.addEventListener('click', async function () {
                     audio: true,
                     readable: audio_readable,
                     config: {
+                        //codec: 'pcm',
                         codec: 'opus',
                         bitrate: 128 * 1000,
                         sampleRate: audio_settings.sampleRate,
@@ -167,6 +168,7 @@ start_el.addEventListener('click', async function () {
                 audio: {
                     sample_rate: audio_settings.sampleRate,
                     channels: audio_settings.channelCount,
+                    //codec_id: 'A_PCM/FLOAT/IEEE'
                     codec_id: 'A_OPUS'
                 }
             }
