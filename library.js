@@ -65,6 +65,10 @@ mergeInto(LibraryManager.library, {
                         if (self.stream_destination) {
                             self.stream_destination.postMessage(msg);
                         }
+                        if ((self.stream_queue.length > 0) &&
+                            (self.stream_queue[0].length === 0)) {
+                            break;
+                        }
                         // falls through
                     case 'stream-data':
                         self.stream_queue.push(new Uint8Array(msg['data']));
