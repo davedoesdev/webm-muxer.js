@@ -1,8 +1,3 @@
-/*receive mux data and re-post it
-
-need to do ready and start-stream
-and exit*/
-
 onmessage = function (e) {
     const msg = e.data;
     switch (msg.type) {
