@@ -2,7 +2,7 @@ function onerror(e) {
     console.error(e);
     self.postMessage({
         type: 'error',
-        detail: e
+        detail: e.message
     });
 }
 
