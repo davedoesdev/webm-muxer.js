@@ -33,6 +33,7 @@ mergeInto(LibraryManager.library, {
                 const msg = e['data'];
                 switch (msg['type']) {
                     case 'start':
+                        self.muxed_metadata = msg['muxed_metadata'];
                         if (msg['webm_destination']) {
                             self.stream_destination = new Worker(msg['webm_destination']);
                             delete msg['webm_destination'];
@@ -93,10 +94,10 @@ mergeInto(LibraryManager.library, {
     },
     emscripten_write: function (buf, size) {
         const data = HEAPU8.slice(buf, buf + size).buffer;
-        self.data_destination.postMessage({
+        self.data_destination.postMessage(Object.assign({
             type: 'muxed-data',
             data
-        }, [data]);
+        }, self.muxed_metadata), [data]);
         return size;
     },
     emscripten_exit: function (code) {
