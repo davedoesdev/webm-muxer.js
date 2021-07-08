@@ -164,5 +164,3 @@ onmessage = function (e) {
         }
     }
 };
-
-
