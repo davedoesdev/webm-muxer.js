@@ -29,25 +29,25 @@ mergeInto(LibraryManager.library, {
                     });
                 }
             }
-            self.onmessage = function (e) {
+            self.onmessage = async function (e) {
                 const msg = e['data'];
                 switch (msg['type']) {
                     case 'start':
                         self.muxed_metadata = msg['muxed_metadata'];
                         if (msg['webm_destination']) {
-                            self.stream_destination = new Worker(msg['webm_destination']);
+                            const WebMDestination = (await import(msg['webm_destination']))['WebMDestination'];
+                            self.stream_destination = new WebMDestination();
                             delete msg['webm_destination'];
-                            self.stream_destination.onmessage = function (e) {
-                                const msg2 = e['data'];
+                            self.stream_destination.addEventListener('message', function (e) {
+                                const msg2 = e.detail;
                                 switch (msg2['type']) {
                                     case 'ready':
-                                        self.stream_destination.postMessage(msg);
+                                        this.start(msg);
                                         break;
 
                                     case 'exit':
                                         self.stream_destination_exited = true;
                                         self.stream_destination_exit_code = msg2['code'];
-                                        self.stream_destination.terminate();
                                         self.stream_exit();
                                         break;
 
@@ -55,16 +55,14 @@ mergeInto(LibraryManager.library, {
                                         self.postMessage(msg2, msg2['transfer']);
                                         break;
                                 }
-                            };
-                            self.data_destination = self.stream_destination;
+                            });
                         } else {
                             self.postMessage({type: 'start-stream'});
-                            self.data_destination = self;
                         }
                         break;
                     case 'end':
                         if (self.stream_destination) {
-                            self.stream_destination.postMessage(msg);
+                            self.stream_destination.end(msg);
                         }
                         if ((self.stream_queue.length > 0) &&
                             (self.stream_queue[0].length === 0)) {
@@ -94,10 +92,14 @@ mergeInto(LibraryManager.library, {
     },
     emscripten_write: function (buf, size) {
         const data = HEAPU8.slice(buf, buf + size).buffer;
-        self.data_destination.postMessage(Object.assign({
-            type: 'muxed-data',
-            data
-        }, self.muxed_metadata), [data]);
+        if (self.stream_destinaton) {
+            self.stream_destination.muxed_data(data, self.muxed_metadata);
+        } else {
+            self.postMessage(Object.assign({
+                type: 'muxed-data',
+                data
+            }, self.muxed_metadata), [data]);
+        }
         return size;
     },
     emscripten_exit: function (code) {

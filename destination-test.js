@@ -1,19 +1,31 @@
-onmessage = function (e) {
-    const msg = e.data;
-    switch (msg.type) {
-        case 'start':
-            postMessage({ type: 'start-stream' });
-            break;
-
-        case 'muxed-data':
-            msg.transfer = [msg.data];
-            postMessage(msg, msg.transfer);
-            break;
-
-        case 'end':
-            postMessage({ type: 'exit', code: 0 });
-            break;
+export class WebMDestination extends EventTarget {
+    constructor() {
+        super();
+        setTimeout(() => {
+            this.dispatchEvent(new CustomEvent('message', { detail: {
+                type: 'ready'
+            }}));
+        }, 0);
     }
-};
 
-postMessage({ type: 'ready' });
+    start() {
+        this.dispatchEvent(new CustomEvent('message', { detail: {
+            type: 'start-stream'
+        }}));
+    }
+
+    muxed_data(data) {
+        this.dispatchEvent(new CustomEvent('message', { detail: {
+            type: 'muxed-data',
+            data,
+            transfer: [data]
+        }}));
+    }
+
+    end() {
+        this.dispatchEvent(new CustomEvent('message', { detail: {
+            type: 'exit',
+            code: 0
+        }}));
+    }
+}
