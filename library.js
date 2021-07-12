@@ -38,7 +38,7 @@ mergeInto(LibraryManager.library, {
                             const WebMDestination = (await import(msg['webm_destination']))['WebMDestination'];
                             self.stream_destination = new WebMDestination();
                             delete msg['webm_destination'];
-                            self.stream_destination.addEventListener('message', function (e) {
+                            self.stream_destination['addEventListener']('message', function (e) {
                                 const msg2 = e.detail;
                                 switch (msg2['type']) {
                                     case 'ready':
@@ -62,7 +62,7 @@ mergeInto(LibraryManager.library, {
                         break;
                     case 'end':
                         if (self.stream_destination) {
-                            self.stream_destination.end(msg);
+                            self.stream_destination['end'](msg);
                         }
                         if ((self.stream_queue.length > 0) &&
                             (self.stream_queue[0].length === 0)) {
@@ -92,8 +92,8 @@ mergeInto(LibraryManager.library, {
     },
     emscripten_write: function (buf, size) {
         const data = HEAPU8.slice(buf, buf + size).buffer;
-        if (self.stream_destinaton) {
-            self.stream_destination.muxed_data(data, self.muxed_metadata);
+        if (self.stream_destination) {
+            self.stream_destination['muxed_data'](data, self.muxed_metadata);
         } else {
             self.postMessage(Object.assign({
                 type: 'muxed-data',
