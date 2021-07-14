@@ -22,10 +22,10 @@ mergeInto(LibraryManager.library, {
             };
             self.stream_exit = function () {
                 if (self.webm_exited &&
-                    (!self.stream_destination || self.stream_destination_exited)) {
+                    (!self.webm_receiver || self.webm_receiver_exited)) {
                     self.postMessage({
                         type: 'exit',
-                        code: self.stream_destination_exit_code || self.webm_exit_code
+                        code: self.webm_receiver_exit_code || self.webm_exit_code
                     });
                 }
             }
@@ -33,12 +33,12 @@ mergeInto(LibraryManager.library, {
                 const msg = e['data'];
                 switch (msg['type']) {
                     case 'start':
-                        self.muxed_metadata = msg['muxed_metadata'];
-                        if (msg['webm_destination']) {
-                            const WebMDestination = (await import(msg['webm_destination']))['WebMDestination'];
-                            self.stream_destination = new WebMDestination();
-                            delete msg['webm_destination'];
-                            self.stream_destination['addEventListener']('message', function (e) {
+                        self.webm_receiver_data = msg['webm_receiver_data'];
+                        if (msg['webm_receiver']) {
+                            const MuxReceiver = (await import(msg['webm_receiver']))['MuxReceiver'];
+                            self.webm_receiver = new MuxReceiver();
+                            delete msg['webm_receiver'];
+                            self.webm_receiver['addEventListener']('message', function (e) {
                                 const msg2 = e.detail;
                                 switch (msg2['type']) {
                                     case 'ready':
@@ -46,8 +46,8 @@ mergeInto(LibraryManager.library, {
                                         break;
 
                                     case 'exit':
-                                        self.stream_destination_exited = true;
-                                        self.stream_destination_exit_code = msg2['code'];
+                                        self.webm_receiver_exited = true;
+                                        self.webm_receiver_exit_code = msg2['code'];
                                         self.stream_exit();
                                         break;
 
@@ -61,8 +61,8 @@ mergeInto(LibraryManager.library, {
                         }
                         break;
                     case 'end':
-                        if (self.stream_destination) {
-                            self.stream_destination['end'](msg);
+                        if (self.webm_receiver) {
+                            self.webm_receiver['end'](msg);
                         }
                         if ((self.stream_queue.length > 0) &&
                             (self.stream_queue[0].length === 0)) {
@@ -92,13 +92,13 @@ mergeInto(LibraryManager.library, {
     },
     emscripten_write: function (buf, size) {
         const data = HEAPU8.slice(buf, buf + size).buffer;
-        if (self.stream_destination) {
-            self.stream_destination['muxed_data'](data, self.muxed_metadata);
+        if (self.webm_receiver) {
+            self.webm_receiver['muxed_data'](data, self.webm_receiver_data);
         } else {
             self.postMessage(Object.assign({
                 type: 'muxed-data',
                 data
-            }, self.muxed_metadata), [data]);
+            }, self.webm_receiver_data), [data]);
         }
         return size;
     },

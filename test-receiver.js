@@ -1,4 +1,4 @@
-export class WebMDestination extends EventTarget {
+export class MuxReceiver extends EventTarget {
     constructor() {
         super();
         setTimeout(() => {

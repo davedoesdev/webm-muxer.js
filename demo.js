@@ -155,7 +155,7 @@ start_el.addEventListener('click', async function () {
 
         webm_worker.postMessage({
             type: 'start',
-            //webm_destination: './test-destination.js',
+            webm_receiver: './test-receiver.js',
             webm_metadata: {
                 max_segment_duration: BigInt(1000000000),
                 video: {
