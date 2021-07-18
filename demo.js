@@ -53,6 +53,7 @@ start_el.addEventListener('click', async function () {
     audio_worker.onerror = onerror;
     audio_worker.onmessage = relay_data;
 
+    let exited = false;
     let buffer;
     let queue = [];
     const key_frame_interval = 10;
@@ -72,10 +73,7 @@ start_el.addEventListener('click', async function () {
                 webm_worker.terminate();
                 video_worker.terminate();
                 audio_worker.terminate();
-                video.pause();
-                video.src = '';
-                video.currentTime = 0;
-                video.poster = poster;
+                exited = true;
                 info.innerText = '';
                 start_el.disabled = false;
                 break;
@@ -132,7 +130,8 @@ start_el.addEventListener('click', async function () {
         if (range.length > 0) {
             info.innerText = `Buffered ${range.start(0)} .. ${range.end(0)}`;
         }
-        if ((video.currentTime === 0) &&
+        if (!exited &&
+            (video.currentTime === 0) &&
             ((buffer_delay === 0) ||
              ((range.length > 0) && (range.end(0) > buffer_delay)))) {
             video.poster = '';
@@ -143,6 +142,12 @@ start_el.addEventListener('click', async function () {
             buffer.remove(0, check);
         } else if (queue.length > 0) {
             buffer.appendBuffer(queue.shift());
+        } else if (exited) {
+            source.endOfStream();
+            video.pause();
+            video.src = '';
+            video.currentTime = 0;
+            video.poster = poster;
         }
     }
 
