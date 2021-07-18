@@ -114,6 +114,26 @@ static int main2(int argc, const char** argv) {
     }
 
     while (true) {
+        // read frame data type (0 = video, 1 = audio) and whether it's a key frame
+        unsigned char type;
+        bool is_key;
+        auto len = emscripten_read_async(buf, 2);
+        if (len == 0) {
+            std::cout << "End of input" << std::endl;
+            muxer.Finalize();
+        } else if (len != 2) {
+            std::cerr << "Failed to read frame header" << std::endl;
+            return 1;
+        } else {
+            type = buf[0];
+            if (type > 1) {
+                std::cerr << "Invalid type byte: " << static_cast<unsigned>(buf[0]) << std::endl;
+                return 1;
+            }
+
+            is_key = buf[1] != 0;
+        }
+
         // write any muxed data that's ready
         int32_t chunk_length;
         while (muxer.ChunkReady(&chunk_length)) {
@@ -133,24 +153,10 @@ static int main2(int argc, const char** argv) {
             }
         }
 
-        // read frame data type (0 = video, 1 = audio) and whether it's a key frame
-        auto len = emscripten_read_async(buf, 2);
+        // no more frame data
         if (len == 0) {
-            std::cout << "End of input" << std::endl;
             break;
         }
-        if (len != 2) {
-            std::cerr << "Failed to read frame header" << std::endl;
-            return 1;
-        }
-
-        auto type = buf[0];
-        if (type > 1) {
-            std::cerr << "Invalid type byte: " << static_cast<unsigned>(buf[0]) << std::endl;
-            return 1;
-        }
-
-        auto is_key = buf[1] != 0;
 
         // read timestamp
         uint64_t timestamp;
