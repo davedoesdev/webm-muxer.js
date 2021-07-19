@@ -2,7 +2,8 @@
 
 https://www.w3.org/TR/webcodecs/[WebCodecs] encodes audio and video but leaves multiplexing the
 output into a container to the application. This project provides a way for your application
-to get its audio and video tracks into a WebM container.
+to get its audio and video tracks into a WebM container. It's licensed under the terms of the
+link:LICENCE[MIT licence].
 
 Under the hood it uses https://github.com/webmproject/libwebm/[libwebm] and
 https://github.com/webmproject/webm-tools/[webmtools] compiled to Web Assembly using
