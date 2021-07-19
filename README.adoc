@@ -9,7 +9,7 @@ https://github.com/webmproject/webm-tools/[webmtools] compiled to Web Assembly u
 https://emscripten.org/[Emscripten].
 
 You can see a demo https://rawgit-now.netlify.app/davedoesdev/webm-muxer.js/main/demo.html[here]
-(tested on Chrome 91 Linux with `#enable-experimental-web-platform-features`).
+(tested on Chrome 93 Linux with `#enable-experimental-web-platform-features`).
 The source code for the demo is available in link:demo.html[] and link:demo.js[].
 
 In your application, there are two Javascript files which you should run in Web Workers:
@@ -51,8 +51,13 @@ Your application should in general follow the procedure described below.
 ** The message's `data` property contains the next chunk of the WebM output, which your application
 can use as it likes.
 
-. When your application receives a message from one of the Workers running `encoder-worker.js`, send it onto
-the Worker running `webm-worker.js`. You should transfer the `data` property.
+. When your application receives a message from one of the Workers running `encoder-worker.js`:
+
+* If the message's `type` property is `error` then an encoding error occurred and the `detail` property contains the error description.
+
+* If the message's `type` property is `exit` then the encoder has finished (its track ended).
+
+* Otherwise send the message onto the Worker running `webm-worker.js`. You should transfer the `data` property.
 
 . Send a message to the Worker running `webm-worker.js` with the following properties:
 [horizontal]
@@ -75,3 +80,8 @@ the Worker running `webm-worker.js`. You should transfer the `data` property.
 `channels`:::: Number of channels in the encoded audio.
 `bit_depth`:::: Number of bits in each sample. This property is usually used only for PCM encoded audio.
 `codec_id`:::: WebM codec ID to describe the audio encoding method, e.g. `"A_OPUS"` or `"A_PCM/FLOAT/IEEE"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
+
+. To stop muxing cleanly, wait for exit messages from all the Workers running `encoder-worker.js` and then send a message to the Worker running `webm-worker.js` with the following property:
++
+[horizontal]
+`type`:: `"end"`
