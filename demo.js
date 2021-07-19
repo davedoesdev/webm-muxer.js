@@ -4,7 +4,7 @@ function onerror(e) {
 
 const start_el = document.getElementById('start');
 const stop_el = document.getElementById('stop');
-let webm_worker;
+let video_track, audio_track;
 
 const video = document.getElementById('video');
 video.onerror = () => onerror(video.error);
@@ -28,20 +28,32 @@ start_el.addEventListener('click', async function () {
         }
     });
 
-    const video_track = stream.getVideoTracks()[0];
+    video_track = stream.getVideoTracks()[0];
     const video_readable = (new MediaStreamTrackProcessor(video_track)).readable;
     const video_settings = video_track.getSettings();
 
-    const audio_track = stream.getAudioTracks()[0];
+    audio_track = stream.getAudioTracks()[0];
     const audio_readable = (new MediaStreamTrackProcessor(audio_track)).readable;
     const audio_settings = audio_track.getSettings();
 
+    let num_exits = 0;
+
     function relay_data(ev) {
         const msg = ev.data;
-        if (msg.type === 'error') {
-            onerror(msg.detail);
-        } else {
-            webm_worker.postMessage(msg, [msg.data]);
+        switch (msg.type) {
+            case 'error':
+                onerror(msg.detail)
+                break;
+
+            case 'exit':
+                if (++num_exits == 2) {
+                    webm_worker.postMessage({ type: 'end' });
+                }
+                break;
+
+            default:
+                webm_worker.postMessage(msg, [msg.data]);
+                break;
         }
     }
 
@@ -59,7 +71,7 @@ start_el.addEventListener('click', async function () {
     const key_frame_interval = 10;
     const buffer_delay = 2;
 
-    webm_worker = new Worker('./webm-worker.js');
+    const webm_worker = new Worker('./webm-worker.js');
     webm_worker.onerror = onerror;
     webm_worker.onmessage = ev => {
         const msg = ev.data;
@@ -68,8 +80,6 @@ start_el.addEventListener('click', async function () {
                 if (msg.code !== 0) {
                     onerror(`muxer exited with status ${msg.code}`);
                 }
-                video_track.stop();
-                audio_track.stop();
                 webm_worker.terminate();
                 video_worker.terminate();
                 audio_worker.terminate();
@@ -183,5 +193,6 @@ start_el.addEventListener('click', async function () {
 
 stop_el.addEventListener('click', async function () {
     this.disabled = true;
-    webm_worker.postMessage({ type: 'end' });
+    video_track.stop();
+    audio_track.stop();
 });

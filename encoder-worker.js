@@ -18,9 +18,8 @@ onmessage = async function (e) {
                 if (msg.config.codec !== 'pcm') {
                     encoder = new Encoder({
                         output: chunk => {
-                            //const data = new ArrayBuffer(chunk.byteLength);
-                            //chunk.copyTo(data);
-                            const data = chunk.data.slice(0, chunk.byteLength);
+                            const data = new ArrayBuffer(chunk.byteLength);
+                            chunk.copyTo(data);
                             self.postMessage({
                                 type,
                                 timestamp: chunk.timestamp,
@@ -40,20 +39,29 @@ onmessage = async function (e) {
                 while (true) {
                     const result = await reader.read();
                     if (result.done) {
+                        if (encoder) {
+                            await encoder.flush();
+                        }
+                        self.postMessage({ type: 'exit' });
                         break;
                     }
                     if (msg.audio) {
-                        if (msg.config.codec === 'pcm') {
+                        if (encoder) {
+                            encoder.encode(result.value);
+                        } else {
                             const data = result.value.buffer.getChannelData(0).buffer.slice(0);
+                            //const options = { planeIndex: 0 };
+                            //const size = result.value.allocationSize(options);
+                            //const data = new ArrayBuffer(size);
+                            //result.value.copyTo(data, options);
                             self.postMessage({
                                 type,
                                 timestamp: result.value.timestamp,
-                                duration: result.value.duration,
+                                duration: result.value.buffer.duration * 1000000,
+                                //duration: result.value.duration,
                                 is_key: true,
                                 data
                             }, [data]);
-                        } else {
-                            encoder.encode(result.value);
                         }
                     } else {
                         const now = Date.now();
