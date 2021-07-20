@@ -1,10 +1,13 @@
 <html>
     <head>
         <script type="module" src="demo.js"></script>
+        <script src="EBML.js"></script>
     </head>
     <body>
         <input type="button" id="start" value="Start">
         <input type="button" id="stop" value="Stop" disabled>
+        <label for="record">Record</label>
+        <input type="checkbox" id="record" value="Record">
         <span id="info"></span>
         <video width="100%" id="video" muted poster="data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot;/>"></video>
     </body>

@@ -4,6 +4,7 @@ function onerror(e) {
 
 const start_el = document.getElementById('start');
 const stop_el = document.getElementById('stop');
+const record_el = document.getElementById('record');
 let video_track, audio_track;
 
 const video = document.getElementById('video');
@@ -12,6 +13,7 @@ const poster = video.poster;
 
 start_el.addEventListener('click', async function () {
     this.disabled = true;
+    record_el.disabled = true;
 
     const info = document.getElementById('info');
     info.innerText = 'Buffering';
@@ -67,13 +69,14 @@ start_el.addEventListener('click', async function () {
 
     let exited = false;
     let buffer;
-    let queue = [];
+    const queue = [];
+    const chunks = [];
     const key_frame_interval = 10;
     const buffer_delay = 2;
 
     const webm_worker = new Worker('./webm-worker.js');
     webm_worker.onerror = onerror;
-    webm_worker.onmessage = ev => {
+    webm_worker.onmessage = async ev => {
         const msg = ev.data;
         switch (msg.type) {
             case 'exit':
@@ -86,6 +89,37 @@ start_el.addEventListener('click', async function () {
                 exited = true;
                 info.innerText = '';
                 start_el.disabled = false;
+                record_el.disabled = false;
+                if (record_el.checked) {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+
+                    // From https://github.com/muaz-khan/RecordRTC/blob/master/RecordRTC.js#L1906
+                    // EBML.js copyrights goes to: https://github.com/legokichi/ts-ebml
+
+                    const reader = new EBML.Reader();
+                    const decoder = new EBML.Decoder();
+
+                    const buf = await blob.arrayBuffer();
+                    const elms = decoder.decode(buf);
+                    for (let elm of elms) {
+                        reader.read(elm);
+                    }
+                    reader.stop();
+                    const refinedMetadataBuf = EBML.tools.makeMetadataSeekable(reader.metadatas, reader.duration, reader.cues);
+                    const body = buf.slice(reader.metadataSize);
+                    const blob2 = new Blob([refinedMetadataBuf, body], {
+                        type: 'video/webm'
+                    });
+
+                    const a = document.createElement('a');
+                    const filename = 'camera.webm';
+                    a.textContent = filename;
+                    a.href = URL.createObjectURL(blob2);
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
                 break;
 
             case 'start-stream':
@@ -123,6 +157,9 @@ start_el.addEventListener('click', async function () {
                 break;
 
             case 'muxed-data':
+                if (record_el.checked) {
+                    chunks.push(msg.data);
+                }
                 queue.push(msg.data);
                 if (!buffer.updating) {
                     remove_append();
