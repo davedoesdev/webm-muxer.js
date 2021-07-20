@@ -1,23 +1,39 @@
 = WebM muxer for WebCodecs
 
+== Description
+
 https://www.w3.org/TR/webcodecs/[WebCodecs] encodes audio and video but leaves multiplexing the
 output into a container to the application. This project provides a way for your application
-to get its audio and video tracks into a WebM container. It's licensed under the terms of the
-link:LICENCE[MIT licence].
+to get its audio and video tracks into a WebM container.
 
 Under the hood it uses https://github.com/webmproject/libwebm/[libwebm] and
 https://github.com/webmproject/webm-tools/[webmtools] compiled to Web Assembly using
 https://emscripten.org/[Emscripten].
 
+== Requirements
+
+webm-muxer.js works on Chrome 93. The WebCodecs spec changes frequently so changes may
+be required to maintain support going forward.
+
+== Licence
+
+webm-muxer.js is licensed under the terms of the link:LICENCE[MIT licence].
+
+== Demo
+
 You can see a demo https://rawgit-now.netlify.app/davedoesdev/webm-muxer.js/main/demo.html[here]
 (tested on Chrome 93 Linux with `#enable-experimental-web-platform-features`).
 The source code for the demo is available in link:demo.html[] and link:demo.js[].
+
+== Integration into your application
 
 In your application, there are two Javascript files which you should run in Web Workers:
 
 link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`] and encodes it using WebCodecs https://www.w3.org/TR/webcodecs/#videoencoder-interface[`VideoEncoder`] or https://www.w3.org/TR/webcodecs/#audioencoder-interface[`AudioEncoder`]. You should run this in up to two Workers, one for video and one for audio.
 
 link:webm-worker.js[]:: Takes output from `encoder-worker.js` and muxes it into WebM container format.
+
+You'll also need copy link:webm-muxer.js[] and link:webm-muxer.wasm[] to your application because `webm-worker.js` uses them.
 
 Your application should in general follow the procedure described below.
 
@@ -49,8 +65,14 @@ Your application should in general follow the procedure described below.
 
 * If the message's `type` property is `muxed-data` then:
 
-** The message's `data` property contains the next chunk of the WebM output, which your application
-can use as it likes.
+** The message's `data` property contains the next chunk of the WebM output as an
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer[`ArrayBuffer`],
+which your application can use as it likes.
+
+* If the message's `type` property is `error` then a muxing error occurred and the `detail` property contains the error description.
+
+* If the message's `type` property is `exit` then the muxer has finished (all the tracks have finished,
+the muxer has flushed its buffers and sent back all the muxed data).
 
 . When your application receives a message from one of the Workers running `encoder-worker.js`:
 
@@ -83,6 +105,16 @@ can use as it likes.
 `codec_id`:::: WebM codec ID to describe the audio encoding method, e.g. `"A_OPUS"` or `"A_PCM/FLOAT/IEEE"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
 
 . To stop muxing cleanly, wait for exit messages from all the Workers running `encoder-worker.js` and then send a message to the Worker running `webm-worker.js` with the following property:
-+
 [horizontal]
 `type`:: `"end"`
+
+== Output
+
+Per above, your application will receive chunked WebM output in multiple `type: "muxed-data"` messages from the Worker running `webm-worker`.
+
+These are suitable for live streaming but if you concatenate them, for example to record them to a file, please be aware that the result
+will not be seekable.
+
+You can use link:EBML.js[] to make the concatenated WebM data seeekable. See link:demo.js#94[the demo] for an example of how to do this. `EBML.js` was generated
+by https://github.com/muaz-khan/RecordRTC/blob/master/libs/EBML.js[RecordRTC] from its original source at
+https://github.com/legokichi/ts-ebml[ts-ebml].

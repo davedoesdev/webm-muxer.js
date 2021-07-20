@@ -8,13 +8,15 @@ export class MuxReceiver extends EventTarget {
         }, 0);
     }
 
-    start() {
+    start(msg) {
+        console.log('START', msg);
         this.dispatchEvent(new CustomEvent('message', { detail: {
             type: 'start-stream'
         }}));
     }
 
-    muxed_data(data) {
+    muxed_data(data, receiver_data) {
+        console.log('MUXED_DATA', data, receiver_data);
         this.dispatchEvent(new CustomEvent('message', { detail: {
             type: 'muxed-data',
             data,
@@ -22,10 +24,11 @@ export class MuxReceiver extends EventTarget {
         }}));
     }
 
-    end() {
+    end(msg, code) {
+        console.log('END', msg, code);
         this.dispatchEvent(new CustomEvent('message', { detail: {
             type: 'exit',
-            code: 0
+            code
         }}));
     }
 }

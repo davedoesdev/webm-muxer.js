@@ -20,14 +20,11 @@ mergeInto(LibraryManager.library, {
                     handler(r);
                 }
             };
-            self.stream_exit = function () {
-                if (self.webm_exited &&
-                    (!self.webm_receiver || self.webm_receiver_exited)) {
-                    self.postMessage({
-                        type: 'exit',
-                        code: self.webm_receiver_exit_code || self.webm_exit_code
-                    });
-                }
+            self.stream_exit = function (code) {
+                self.postMessage({
+                    type: 'exit',
+                    code
+                });
             }
             self.onmessage = async function (e) {
                 const msg = e['data'];
@@ -46,9 +43,7 @@ mergeInto(LibraryManager.library, {
                                         break;
 
                                     case 'exit':
-                                        self.webm_receiver_exited = true;
-                                        self.webm_receiver_exit_code = msg2['code'];
-                                        self.stream_exit();
+                                        self.stream_exit(msg2['code']);
                                         break;
 
                                     default:
@@ -61,9 +56,7 @@ mergeInto(LibraryManager.library, {
                         }
                         break;
                     case 'end':
-                        if (self.webm_receiver) {
-                            self.webm_receiver['end'](msg);
-                        }
+                        self.end_msg = msg;
                         if ((self.stream_queue.length > 0) &&
                             (self.stream_queue[0].length === 0)) {
                             break;
@@ -103,9 +96,11 @@ mergeInto(LibraryManager.library, {
         return size;
     },
     emscripten_exit: function (code) {
-        self.webm_exited = true;
-        self.webm_exit_code = code;
-        self.stream_exit();
+        if (self.webm_receiver) {
+            self.webm_receiver['end'](self.end_msg, code);
+        } else {
+            self.stream_exit(code);
+        }
         return code;
     }
 });
