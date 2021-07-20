@@ -115,6 +115,6 @@ Per above, your application will receive chunked WebM output in multiple `type: 
 These are suitable for live streaming but if you concatenate them, for example to record them to a file, please be aware that the result
 will not be seekable.
 
-You can use link:EBML.js[] to make the concatenated WebM data seeekable. See link:demo.js#94[the demo] for an example of how to do this. `EBML.js` was generated
+You can use link:EBML.js[] to make the concatenated WebM data seeekable. See link:demo.js#L94[the demo] for an example of how to do this. `EBML.js` was generated
 by https://github.com/muaz-khan/RecordRTC/blob/master/libs/EBML.js[RecordRTC] from its original source at
 https://github.com/legokichi/ts-ebml[ts-ebml].
