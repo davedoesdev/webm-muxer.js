@@ -159,7 +159,9 @@ onmessage = function (e) {
         }
 
         case 'end': {
-            webm_muxer.postMessage(msg);
+            if (webm_muxer) {
+                webm_muxer.postMessage(msg);
+            }
             break;
         }
     }
