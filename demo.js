@@ -192,9 +192,10 @@ start_el.addEventListener('click', async function () {
         } else if (exited) {
             source.endOfStream();
             video.pause();
-            video.src = '';
+            video.removeAttribute('src');
             video.currentTime = 0;
             video.poster = poster;
+            video.load();
         }
     }
 
