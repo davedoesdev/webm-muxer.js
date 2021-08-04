@@ -49,16 +49,14 @@ onmessage = async function (e) {
                         if (encoder) {
                             encoder.encode(result.value);
                         } else {
-                            const data = result.value.buffer.getChannelData(0).buffer.slice(0);
-                            //const options = { planeIndex: 0 };
-                            //const size = result.value.allocationSize(options);
-                            //const data = new ArrayBuffer(size);
-                            //result.value.copyTo(data, options);
+                            const options = { planeIndex: 0 };
+                            const size = result.value.allocationSize(options);
+                            const data = new ArrayBuffer(size);
+                            result.value.copyTo(data, options);
                             self.postMessage({
                                 type,
                                 timestamp: result.value.timestamp,
-                                duration: result.value.buffer.duration * 1000000,
-                                //duration: result.value.duration,
+                                duration: result.value.duration,
                                 is_key: true,
                                 data
                             }, [data]);

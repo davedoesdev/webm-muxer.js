@@ -5,6 +5,7 @@ function onerror(e) {
 const start_el = document.getElementById('start');
 const stop_el = document.getElementById('stop');
 const record_el = document.getElementById('record');
+const pcm_el = document.getElementById('pcm');
 let video_track, audio_track;
 
 const video = document.getElementById('video');
@@ -14,9 +15,13 @@ const poster = video.poster;
 start_el.addEventListener('click', async function () {
     this.disabled = true;
     record_el.disabled = true;
+    pcm_el.disabled = true;
 
-    const info = document.getElementById('info');
-    info.innerText = 'Buffering';
+    const buf_info = document.getElementById('buf_info');
+    buf_info.innerText = 'Buffering';
+
+    const rec_info = document.getElementById('rec_info');
+    rec_info.innerText = record_el.checked ? 'Recording' : '';
 
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -71,6 +76,7 @@ start_el.addEventListener('click', async function () {
     let buffer;
     const queue = [];
     const chunks = [];
+    let rec_size = 0;
     const key_frame_interval = 10;
     const buffer_delay = 2;
 
@@ -87,9 +93,9 @@ start_el.addEventListener('click', async function () {
                 video_worker.terminate();
                 audio_worker.terminate();
                 exited = true;
-                info.innerText = '';
                 start_el.disabled = false;
                 record_el.disabled = false;
+                pcm_el.disabled = false;
                 if (record_el.checked) {
                     const blob = new Blob(chunks, { type: 'video/webm' });
 
@@ -144,8 +150,7 @@ start_el.addEventListener('click', async function () {
                     audio: true,
                     readable: audio_readable,
                     config: {
-                        //codec: 'pcm',
-                        codec: 'opus',
+                        codec: pcm_el.checked ? 'pcm' : 'opus',
                         bitrate: 128 * 1000,
                         sampleRate: audio_settings.sampleRate,
                         numberOfChannels: audio_settings.channelCount
@@ -159,6 +164,8 @@ start_el.addEventListener('click', async function () {
             case 'muxed-data':
                 if (record_el.checked) {
                     chunks.push(msg.data);
+                    rec_size += msg.data.byteLength;
+                    rec_info.innerText = `Recorded ${rec_size} bytes`;
                 }
                 queue.push(msg.data);
                 if (!buffer.updating) {
@@ -175,7 +182,7 @@ start_el.addEventListener('click', async function () {
     function remove_append() {
         const range = buffer.buffered;
         if (range.length > 0) {
-            info.innerText = `Buffered ${range.start(0)} .. ${range.end(0)}`;
+            buf_info.innerText = `Buffered ${range.start(0)} .. ${range.end(0)}`;
         }
         if (!exited &&
             (video.currentTime === 0) &&
@@ -190,6 +197,7 @@ start_el.addEventListener('click', async function () {
         } else if (queue.length > 0) {
             buffer.appendBuffer(queue.shift());
         } else if (exited) {
+            buf_info.innerText = '';
             source.endOfStream();
             video.pause();
             video.removeAttribute('src');
@@ -219,10 +227,10 @@ start_el.addEventListener('click', async function () {
                     codec_id: 'V_VP9'
                 },
                 audio: {
+                    bit_depth: pcm_el.checked ? 32 : 0,
                     sample_rate: audio_settings.sampleRate,
                     channels: audio_settings.channelCount,
-                    //codec_id: 'A_PCM/FLOAT/IEEE'
-                    codec_id: 'A_OPUS'
+                    codec_id: pcm_el.checked ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS'
                 }
             }
         });
