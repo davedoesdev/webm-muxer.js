@@ -12,6 +12,17 @@ const video = document.getElementById('video');
 video.onerror = () => onerror(video.error);
 const poster = video.poster;
 
+// See https://www.webmproject.org/vp9/mp4/
+// and also https://googlechrome.github.io/samples/media/vp9-codec-string.html
+const vp9_params = {
+    profile: 0,
+    level: 10,
+    bit_depth: 8,
+    chroma_subsampling: 1
+};
+const vp9c = Object.fromEntries(Object.entries(vp9_params).map(
+    ([k, v]) => [k, v.toString().padStart(2, '0')]));
+
 start_el.addEventListener('click', async function () {
     this.disabled = true;
     record_el.disabled = true;
@@ -135,7 +146,7 @@ start_el.addEventListener('click', async function () {
                     key_frame_interval,
                     config: {
                         //codec: 'avc1.42E01E',
-                        codec: 'vp09.00.10.08',
+                        codec: `vp09.${vp9c.profile}.${vp9c.level}.${vp9c.bit_depth}.${vp9c.chroma_subsampling}`,
                         bitrate: 2500 * 1000,
                         width: video_settings.width,
                         height: video_settings.height
@@ -231,6 +242,22 @@ start_el.addEventListener('click', async function () {
             view.setUint8(18, 0, true); // mapping family
         }
 
+        // See https://www.webmproject.org/docs/container/#vp9-codec-feature-metadata-codecprivate
+        const video_codec_private = new ArrayBuffer(12);
+        const view = new DataView(video_codec_private);
+        view.setUint8(0, 1); // profile
+        view.setUint8(1, 1); // length
+        view.setUint8(2, vp9_params.profile);
+        view.setUint8(3, 2); // level
+        view.setUint8(4, 1); // length
+        view.setUint8(5, vp9_params.level);
+        view.setUint8(6, 3); // bit depth
+        view.setUint8(7, 1); // length
+        view.setUint8(8, vp9_params.bit_depth);
+        view.setUint8(9, 4); // chroma subsampling
+        view.setUint8(10, 1); // length
+        view.setUint8(11, vp9_params.chrome_subsampling);
+
         webm_worker.postMessage({
             type: 'start',
             //webm_receiver: './test-receiver.js',
@@ -241,7 +268,8 @@ start_el.addEventListener('click', async function () {
                     height: video_settings.height,
                     frame_rate: video_settings.frameRate,
                     //codec_id: 'V_MPEG4/ISO/AVC'
-                    codec_id: 'V_VP9'
+                    codec_id: 'V_VP9',
+                    codec_private: video_codec_private
                 },
                 audio: {
                     bit_depth: pcm_el.checked ? 32 : 0,
