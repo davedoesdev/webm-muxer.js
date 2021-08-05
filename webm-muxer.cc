@@ -1,8 +1,8 @@
 #include <iostream>
 #include <webm_live_muxer.h>
 
-const int buf_size = 16 * 1024 * 1024;
-static unsigned char buf[buf_size];
+static unsigned char buf[16 * 1024 * 1024];
+static unsigned char codec_id[256];
 
 const int video_flag = 0b01;
 const int audio_flag = 0b10;
@@ -60,15 +60,30 @@ static int main2(int argc, const char** argv) {
         }
 
         // read video codec ID
-        auto len = emscripten_read_async(buf, sizeof(buf) - 1);
-        if ((len <= 0) || (len > (sizeof(buf) - 1))) {
+        auto len = emscripten_read_async(codec_id, sizeof(codec_id) - 1);
+        if ((len <= 0) || (len > (sizeof(codec_id) - 1))) {
             std::cerr << "Failed to read video codec ID" << std::endl;
             return 1;
         }
-        buf[len] = '\0';
+        codec_id[len] = '\0';
 
+        // read private video codec data
+        len = emscripten_read_async(buf, sizeof(buf));
+        if ((len < 0) || (len > sizeof(buf))) {
+            std::cerr << "Failed to read private video codec data" << std::endl;
+            return 1;
+        }
+
+        // read pre-roll
+        uint64_t pre_roll;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&pre_roll), sizeof(pre_roll)) != sizeof(pre_roll)) {
+            std::cerr << "Failed to read pre-roll" << std::endl;
+            return 1;
+        }
+        pre_roll *= 1000;
+       
         // add video track
-        auto r = muxer.AddVideoTrack(width, height, reinterpret_cast<char*>(buf), frame_rate);
+        auto r = muxer.AddVideoTrack(width, height, reinterpret_cast<char*>(codec_id), len > 0 ? buf : nullptr, len, frame_rate, pre_roll);
         if (r < 0) {
             std::cerr << "Failed to add video track: " << r << std::endl;
             return 1;
@@ -98,15 +113,30 @@ static int main2(int argc, const char** argv) {
         }
 
         // read audio codec ID
-        auto len = emscripten_read_async(buf, sizeof(buf) - 1);
-        if ((len <= 0) || (len > (sizeof(buf) - 1))) {
+        auto len = emscripten_read_async(codec_id, sizeof(codec_id) - 1);
+        if ((len <= 0) || (len > (sizeof(codec_id) - 1))) {
             std::cerr << "Failed to read video codec ID" << std::endl;
             return 1;
         }
-        buf[len] = '\0';
+        codec_id[len] = '\0';
 
+        // read private audio codec data
+        len = emscripten_read_async(buf, sizeof(buf));
+        if ((len < 0) || (len > sizeof(buf))) {
+            std::cerr << "Failed to read private audoi codec data" << std::endl;
+            return 1;
+        }
+
+        // read pre-roll
+        uint64_t pre_roll;
+        if (emscripten_read_async(reinterpret_cast<unsigned char*>(&pre_roll), sizeof(pre_roll)) != sizeof(pre_roll)) {
+            std::cerr << "Failed to read pre-roll" << std::endl;
+            return 1;
+        }
+        pre_roll *= 1000;
+ 
         // add audio track
-        auto r = muxer.AddAudioTrack(sample_rate, channels, nullptr, 0, reinterpret_cast<char*>(buf), bit_depth);
+        auto r = muxer.AddAudioTrack(sample_rate, channels, reinterpret_cast<char*>(codec_id), len > 0 ? buf : nullptr, len, bit_depth, pre_roll);
         if (r < 0) {
             std::cerr << "Failed to add audio track: " << r << std::endl;
             return 1;

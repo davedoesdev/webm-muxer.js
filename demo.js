@@ -214,6 +214,23 @@ start_el.addEventListener('click', async function () {
         buffer = this.addSourceBuffer('video/webm; codecs=vp9,opus');
         buffer.addEventListener('updateend', remove_append);
 
+        let audio_codec_private;
+        if (!pcm_el.checked) {
+            // Adapted from https://github.com/kbumsik/opus-media-recorder/blob/master/src/ContainerInterface.cpp#L27
+            // See also https://datatracker.ietf.org/doc/html/rfc7845#section-5.1
+
+            audio_codec_private = new ArrayBuffer(19);
+            new TextEncoder().encodeInto('OpusHead', new Uint8Array(audio_codec_private)); // magic
+
+            const view = new DataView(audio_codec_private);
+            view.setUint8(8, 1); // version
+            view.setUint8(9, audio_settings.channelCount); // channel count
+            view.setUint16(10, 0, true); // pre-skip
+            view.setUint32(12, audio_settings.sampleRate, true); // sample rate
+            view.setUint16(16, 0, true); // output gain
+            view.setUint8(18, 0, true); // mapping family
+        }
+
         webm_worker.postMessage({
             type: 'start',
             //webm_receiver: './test-receiver.js',
@@ -230,7 +247,9 @@ start_el.addEventListener('click', async function () {
                     bit_depth: pcm_el.checked ? 32 : 0,
                     sample_rate: audio_settings.sampleRate,
                     channels: audio_settings.channelCount,
-                    codec_id: pcm_el.checked ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS'
+                    codec_id: pcm_el.checked ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS',
+                    seek_pre_roll: BigInt(80000),
+                    codec_private: audio_codec_private
                 }
             }
         });

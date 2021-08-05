@@ -69,6 +69,12 @@ function send_metadata(metadata) {
         send_data(frame_rate);
 
         send_data(new TextEncoder().encode(metadata.video.codec_id).buffer);
+
+        send_data(metadata.video.codec_private || new ArrayBuffer(0));
+
+        const seek_pre_roll = new ArrayBuffer(8);
+        new DataView(seek_pre_roll).setBigUint64(0, metadata.video.seek_pre_roll || BigInt(0), true);
+        send_data(seek_pre_roll);
     }
 
     if (metadata.audio) {
@@ -85,6 +91,12 @@ function send_metadata(metadata) {
         send_data(bit_depth);
 
         send_data(new TextEncoder().encode(metadata.audio.codec_id).buffer);
+
+        send_data(metadata.audio.codec_private || new ArrayBuffer(0));
+
+        const seek_pre_roll = new ArrayBuffer(8);
+        new DataView(seek_pre_roll).setBigUint64(0, metadata.audio.seek_pre_roll || BigInt(0), true);
+        send_data(seek_pre_roll);
     }
 
     self.postMessage({type: 'start-stream'});
