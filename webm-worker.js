@@ -76,16 +76,16 @@ function send_metadata(metadata) {
             const view = new DataView(codec_private);
             view.setUint8(0, 1); // profile
             view.setUint8(1, 1); // length
-            view.setUint8(2, metadata.video.profile);
+            view.setUint8(2, metadata.video.profile || 0);
             view.setUint8(3, 2); // level
             view.setUint8(4, 1); // length
-            view.setUint8(5, metadata.video.level);
+            view.setUint8(5, metadata.video.level || 10);
             view.setUint8(6, 3); // bit depth
             view.setUint8(7, 1); // length
-            view.setUint8(8, metadata.video.bit_depth);
+            view.setUint8(8, metadata.video.bit_depth || 8);
             view.setUint8(9, 4); // chroma subsampling
             view.setUint8(10, 1); // length
-            view.setUint8(11, metadata.video.chrome_subsampling);
+            view.setUint8(11, metadata.video.chrome_subsampling || 1);
             send_data(codec_private);
         } else {
             send_data(new ArrayBuffer(0));
@@ -121,9 +121,9 @@ function send_metadata(metadata) {
             const view = new DataView(codec_private);
             view.setUint8(8, 1); // version
             view.setUint8(9, metadata.audio.channels); // channel count
-            view.setUint16(10, 0, true); // pre-skip
+            view.setUint16(10, metadata.audio.pre_skip || 0, true); // pre-skip
             view.setUint32(12, metadata.audio.sample_rate, true); // sample rate
-            view.setUint16(16, 0, true); // output gain
+            view.setUint16(16, metadata.audio.output_gain || 0, true); // output gain
             view.setUint8(18, 0, true); // mapping family
 
             send_data(codec_private);
