@@ -70,7 +70,26 @@ function send_metadata(metadata) {
 
         send_data(new TextEncoder().encode(metadata.video.codec_id).buffer);
 
-        send_data(metadata.video.codec_private || new ArrayBuffer(0));
+        if (metadata.video.codec_id === 'V_VP9') {
+            // See https://www.webmproject.org/docs/container/#vp9-codec-feature-metadata-codecprivate
+            const codec_private = new ArrayBuffer(12);
+            const view = new DataView(codec_private);
+            view.setUint8(0, 1); // profile
+            view.setUint8(1, 1); // length
+            view.setUint8(2, metadata.video.profile);
+            view.setUint8(3, 2); // level
+            view.setUint8(4, 1); // length
+            view.setUint8(5, metadata.video.level);
+            view.setUint8(6, 3); // bit depth
+            view.setUint8(7, 1); // length
+            view.setUint8(8, metadata.video.bit_depth);
+            view.setUint8(9, 4); // chroma subsampling
+            view.setUint8(10, 1); // length
+            view.setUint8(11, metadata.video.chrome_subsampling);
+            send_data(codec_private);
+        } else {
+            send_data(new ArrayBuffer(0));
+        }
 
         const seek_pre_roll = new ArrayBuffer(8);
         new DataView(seek_pre_roll).setBigUint64(0, metadata.video.seek_pre_roll || BigInt(0), true);
@@ -92,10 +111,30 @@ function send_metadata(metadata) {
 
         send_data(new TextEncoder().encode(metadata.audio.codec_id).buffer);
 
-        send_data(metadata.audio.codec_private || new ArrayBuffer(0));
+        if (metadata.audio.codec_id === 'A_OPUS') {
+            // Adapted from https://github.com/kbumsik/opus-media-recorder/blob/master/src/ContainerInterface.cpp#L27
+            // See also https://datatracker.ietf.org/doc/html/rfc7845#section-5.1
+
+            const codec_private = new ArrayBuffer(19);
+            new TextEncoder().encodeInto('OpusHead', new Uint8Array(codec_private)); // magic
+
+            const view = new DataView(codec_private);
+            view.setUint8(8, 1); // version
+            view.setUint8(9, metadata.audio.channels); // channel count
+            view.setUint16(10, 0, true); // pre-skip
+            view.setUint32(12, metadata.audio.sample_rate, true); // sample rate
+            view.setUint16(16, 0, true); // output gain
+            view.setUint8(18, 0, true); // mapping family
+
+            send_data(codec_private);
+        } else {
+            send_data(new ArrayBuffer(0));
+        }
 
         const seek_pre_roll = new ArrayBuffer(8);
-        new DataView(seek_pre_roll).setBigUint64(0, metadata.audio.seek_pre_roll || BigInt(0), true);
+        new DataView(seek_pre_roll).setBigUint64(0,
+                metadata.audio.seek_pre_roll || BigInt(metadata.audio.codec_id === 'A_OPUS' ? 80000 : 0),
+                true);
         send_data(seek_pre_roll);
     }
 

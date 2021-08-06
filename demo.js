@@ -225,39 +225,6 @@ start_el.addEventListener('click', async function () {
         buffer = this.addSourceBuffer('video/webm; codecs=vp9,opus');
         buffer.addEventListener('updateend', remove_append);
 
-        let audio_codec_private;
-        if (!pcm_el.checked) {
-            // Adapted from https://github.com/kbumsik/opus-media-recorder/blob/master/src/ContainerInterface.cpp#L27
-            // See also https://datatracker.ietf.org/doc/html/rfc7845#section-5.1
-
-            audio_codec_private = new ArrayBuffer(19);
-            new TextEncoder().encodeInto('OpusHead', new Uint8Array(audio_codec_private)); // magic
-
-            const view = new DataView(audio_codec_private);
-            view.setUint8(8, 1); // version
-            view.setUint8(9, audio_settings.channelCount); // channel count
-            view.setUint16(10, 0, true); // pre-skip
-            view.setUint32(12, audio_settings.sampleRate, true); // sample rate
-            view.setUint16(16, 0, true); // output gain
-            view.setUint8(18, 0, true); // mapping family
-        }
-
-        // See https://www.webmproject.org/docs/container/#vp9-codec-feature-metadata-codecprivate
-        const video_codec_private = new ArrayBuffer(12);
-        const view = new DataView(video_codec_private);
-        view.setUint8(0, 1); // profile
-        view.setUint8(1, 1); // length
-        view.setUint8(2, vp9_params.profile);
-        view.setUint8(3, 2); // level
-        view.setUint8(4, 1); // length
-        view.setUint8(5, vp9_params.level);
-        view.setUint8(6, 3); // bit depth
-        view.setUint8(7, 1); // length
-        view.setUint8(8, vp9_params.bit_depth);
-        view.setUint8(9, 4); // chroma subsampling
-        view.setUint8(10, 1); // length
-        view.setUint8(11, vp9_params.chrome_subsampling);
-
         webm_worker.postMessage({
             type: 'start',
             //webm_receiver: './test-receiver.js',
@@ -269,15 +236,13 @@ start_el.addEventListener('click', async function () {
                     frame_rate: video_settings.frameRate,
                     //codec_id: 'V_MPEG4/ISO/AVC'
                     codec_id: 'V_VP9',
-                    codec_private: video_codec_private
+                    ...vp9_params
                 },
                 audio: {
                     bit_depth: pcm_el.checked ? 32 : 0,
                     sample_rate: audio_settings.sampleRate,
                     channels: audio_settings.channelCount,
-                    codec_id: pcm_el.checked ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS',
-                    seek_pre_roll: BigInt(80000),
-                    codec_private: audio_codec_private
+                    codec_id: pcm_el.checked ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS'
                 }
             }
         });
