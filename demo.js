@@ -104,39 +104,53 @@ start_el.addEventListener('click', async function () {
                 video_worker.terminate();
                 audio_worker.terminate();
                 exited = true;
-                start_el.disabled = false;
-                record_el.disabled = false;
-                pcm_el.disabled = false;
-                if (record_el.checked) {
-                    const blob = new Blob(chunks, { type: 'video/webm' });
 
-                    // From https://github.com/muaz-khan/RecordRTC/blob/master/RecordRTC.js#L1906
-                    // EBML.js copyrights goes to: https://github.com/legokichi/ts-ebml
-
-                    const reader = new EBML.Reader();
-                    const decoder = new EBML.Decoder();
-
-                    const buf = await blob.arrayBuffer();
-                    const elms = decoder.decode(buf);
-                    for (let elm of elms) {
-                        reader.read(elm);
-                    }
-                    reader.stop();
-                    const refinedMetadataBuf = EBML.tools.makeMetadataSeekable(reader.metadatas, reader.duration, reader.cues);
-                    const body = buf.slice(reader.metadataSize);
-                    const blob2 = new Blob([refinedMetadataBuf, body], {
-                        type: 'video/webm'
-                    });
-
-                    const a = document.createElement('a');
-                    const filename = 'camera.webm';
-                    a.textContent = filename;
-                    a.href = URL.createObjectURL(blob2);
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
+                function enable_inputs() {
+                    start_el.disabled = false;
+                    record_el.disabled = false;
+                    pcm_el.disabled = false;
                 }
+
+                if (record_el.checked) {
+                    rec_info.innerText = `Indexing ${rec_size} bytes`;
+                    setTimeout(async function () {
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+
+                        // From https://github.com/muaz-khan/RecordRTC/blob/master/RecordRTC.js#L1906
+                        // EBML.js copyrights goes to: https://github.com/legokichi/ts-ebml
+
+                        const reader = new EBML.Reader();
+                        const decoder = new EBML.Decoder();
+
+                        const buf = await blob.arrayBuffer();
+                        const elms = decoder.decode(buf);
+                        for (let elm of elms) {
+                            reader.read(elm);
+                        }
+                        reader.stop();
+                        const refinedMetadataBuf = EBML.tools.makeMetadataSeekable(reader.metadatas, reader.duration, reader.cues);
+                        rec_info.innerText = `Indexed ${rec_size} bytes`;
+
+                        const body = buf.slice(reader.metadataSize);
+                        const blob2 = new Blob([refinedMetadataBuf, body], {
+                            type: 'video/webm'
+                        });
+
+                        const a = document.createElement('a');
+                        const filename = 'camera.webm';
+                        a.textContent = filename;
+                        a.href = URL.createObjectURL(blob2);
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+
+                        enable_inputs();
+                    }, 0);
+                } else {
+                    enable_inputs();
+                }
+
                 break;
 
             case 'start-stream':
