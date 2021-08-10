@@ -48,11 +48,27 @@ onmessage = async function (e) {
                     if (msg.audio) {
                         if (encoder) {
                             encoder.encode(result.value);
+                        } else if (result.value.format !== 'f32-planar') {
+                            throw new Error(`unexpected audio format: ${result.value.format}`);
                         } else {
-                            const options = { planeIndex: 0 };
-                            const size = result.value.allocationSize(options);
-                            const data = new ArrayBuffer(size);
-                            result.value.copyTo(data, options);
+                            // Convert from planar to interleaved
+                            const nc = result.value.numberOfChannels;
+                            let total_size = 0;
+                            const bufs = [];
+                            for (let i = 0; i < nc; ++i) {
+                                const options = { planeIndex: i };
+                                const size = result.value.allocationSize(options);
+                                total_size += size;
+                                const buf = new ArrayBuffer(size);
+                                result.value.copyTo(buf, options);
+                                bufs.push(buf);
+                            }
+                            const data = new ArrayBuffer(total_size);
+                            const buf = new Uint8Array(data);
+                            for (let i = 0; i < total_size; i += 4) {
+                                const d = i / 4;
+                                buf.set(new Uint8Array(bufs[Math.floor(d) % nc], Math.floor(d / nc) * 4, 4), i);
+                            }
                             self.postMessage({
                                 type,
                                 timestamp: result.value.timestamp,

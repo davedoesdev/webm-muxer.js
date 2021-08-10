@@ -12,6 +12,18 @@ const video = document.getElementById('video');
 video.onerror = () => onerror(video.error);
 const poster = video.poster;
 
+record_el.addEventListener('input', function () {
+    if (this.checked) {
+        pcm_el.disabled = false;
+        pcm_el.checked = pcm_el.was_checked;
+    } else {
+        pcm_el.disabled = true;
+        pcm_el.was_checked = pcm_el.checked;
+        pcm_el.checked = false;
+    }
+});
+pcm_el.disabled = true;
+
 // See https://www.webmproject.org/vp9/mp4/
 // and also https://googlechrome.github.io/samples/media/vp9-codec-string.html
 const vp9_params = {
@@ -29,7 +41,9 @@ start_el.addEventListener('click', async function () {
     pcm_el.disabled = true;
 
     const buf_info = document.getElementById('buf_info');
-    buf_info.innerText = 'Buffering';
+    if (!pcm_el.checked) {
+        buf_info.innerText = 'Buffering';
+    }
 
     const rec_info = document.getElementById('rec_info');
     rec_info.innerText = record_el.checked ? 'Recording' : '';
@@ -193,7 +207,7 @@ start_el.addEventListener('click', async function () {
                     rec_info.innerText = `Recorded ${rec_size} bytes`;
                 }
                 queue.push(msg.data);
-                if (!buffer.updating) {
+                if (!pcm_el.checked && !buffer.updating) {
                     remove_append();
                 }
                 break;
