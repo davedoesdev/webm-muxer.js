@@ -78,7 +78,7 @@ start_el.addEventListener('click', async function () {
                 break;
 
             case 'exit':
-                if (++num_exits == 2) {
+                if (++num_exits === 2) {
                     webm_worker.postMessage({ type: 'end' });
                 }
                 break;
