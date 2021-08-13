@@ -12,7 +12,8 @@ function onerror(e) {
 let metadata;
 let webm_muxer;
 let first_video_timestamp = null;
-let first_audio_timestamp = null;
+let first_audio_timestamp = null; // using timestamps on encoded chunks
+let next_audio_timestamp = 0; // using durations on encoded chunks
 let last_timestamp = -1;
 let queued_audio = [];
 
@@ -24,7 +25,10 @@ function send_data(data) {
 }
 
 function send_msg(msg) {
-    if (msg.timestamp <= last_timestamp) {
+    if (msg.timestamp <= last_timestamp)  {
+        if (msg.timestamp < last_timestamp) {
+            console.warn(`${msg.type} timestamp ${msg.timestamp} is older than last timestamp ${last_timestamp}`);
+        }
         msg.timestamp = last_timestamp + 1;
     }
     last_timestamp = msg.timestamp;
@@ -164,7 +168,20 @@ onmessage = function (e) {
                 if (first_audio_timestamp === null) {
                     first_audio_timestamp = msg.timestamp;
                 }
-                msg.timestamp -= first_audio_timestamp;
+                const timestamp = msg.timestamp - first_audio_timestamp;
+                if (!msg.duration && (next_audio_timestamp >= 0)) {
+                    console.warn('no audio duration');
+                    next_audio_timestamp = -1;
+                }
+                if (next_audio_timestamp >= 0) {
+                    msg.timestamp = next_audio_timestamp;
+                    next_audio_timestamp += msg.duration;
+                    if (msg.timestamp !== timestamp) {
+                        console.warn(`timestamp mismatch: timestamp=${timestamp} durations=${msg.timestamp}`);
+                    }
+                } else {
+                    msg.timestamp = timestamp;
+                }
                 if (metadata.video) {
                     queued_audio.push(msg);
                 } else {
