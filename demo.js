@@ -54,7 +54,7 @@ start_el.addEventListener('click', async function () {
         }*/
     });
 
-    const camera_video_config = await min_camera_video_config({
+    const camera_video_constraints = {
         ratio: video_encoder_config.ratio,
         width: video_encoder_config.width,
         height: video_encoder_config.height,
@@ -62,7 +62,12 @@ start_el.addEventListener('click', async function () {
             ideal: 30,
             max: 30
         }
-    });
+    };
+
+    const camera_video_config = await min_camera_video_config(camera_video_constraints) ||
+                                await max_camera_video_config(camera_video_constraints);
+
+    console.log(video_encoder_config, camera_video_config);
 
     this.disabled = true;
     record_el.disabled = true;

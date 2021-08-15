@@ -75,6 +75,22 @@ export async function max_video_encoder_config(constraints) {
     return null;
 }
 
+async function gum(constraints, res) {
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+            ...constraints,
+            ...res
+        }
+    });
+    for (let track of stream.getTracks()) {
+        track.stop();
+    }
+    return {
+        ...constraints,
+        ...res
+    };
+}
+
 export async function min_camera_video_config(constraints) {
     constraints = constraints || {};
     for (let i = resolutions.length - 1; i >= 0; --i) {
@@ -83,19 +99,21 @@ export async function min_camera_video_config(constraints) {
             (!constraints.width || (res.width >= constraints.width)) &&
             (!constraints.height || (res.height >= constraints.height))) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        ...constraints,
-                        ...res
-                    }
-                });
-                for (let track of stream.getTracks()) {
-                    track.stop();
-                }
-                return {
-                    ...constraints,
-                    ...res
-                };
+                return await gum(constraints, res);
+            } catch (ex) {}
+        }
+    }
+    return null;
+}
+
+export async function max_camera_video_config(constraints) {
+    constraints = constraints || {};
+    for (let res of resolutions) {
+        if ((!constraints.ratio || (res.ratio === constraints.ratio)) &&
+            (!constraints.width || (res.width <= constraints.width)) &&
+            (!constraints.height || (res.height <= constraints.height))) {
+            try {
+                return await gum(constraints, res);
             } catch (ex) {}
         }
     }
