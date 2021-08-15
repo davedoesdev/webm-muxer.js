@@ -67,8 +67,6 @@ start_el.addEventListener('click', async function () {
     const camera_video_config = await min_camera_video_config(camera_video_constraints) ||
                                 await max_camera_video_config(camera_video_constraints);
 
-    console.log(video_encoder_config, camera_video_config);
-
     this.disabled = true;
     record_el.disabled = true;
     pcm_el.disabled = true;
