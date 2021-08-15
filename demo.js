@@ -146,7 +146,7 @@ start_el.addEventListener('click', async function () {
                 function enable_inputs() {
                     start_el.disabled = false;
                     record_el.disabled = false;
-                    pcm_el.disabled = false;
+                    pcm_el.disabled = !record_el.checked;
                 }
 
                 if (record_el.checked) {
