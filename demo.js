@@ -1,3 +1,8 @@
+import {
+    max_video_encoder_config,
+    min_camera_video_config
+} from './resolution.js';
+
 function onerror(e) {
     console.error(e);
 }
@@ -34,8 +39,31 @@ const vp9_params = {
 };
 const vp9c = Object.fromEntries(Object.entries(vp9_params).map(
     ([k, v]) => [k, v.toString().padStart(2, '0')]));
+const vp9_codec = `vp09.${vp9c.profile}.${vp9c.level}.${vp9c.bit_depth}.${vp9c.chroma_subsampling}`;
 
 start_el.addEventListener('click', async function () {
+    const video_encoder_config = await max_video_encoder_config({
+        //codec: 'avc1.42E01E',
+        codec: vp9_codec,
+        ratio: '16:9',
+        width: 1920,
+        height: 1080,
+        bitrate: 2500 * 1000,
+        /*avc: {
+            format: 'annexb'
+        }*/
+    });
+
+    const camera_video_config = await min_camera_video_config({
+        ratio: video_encoder_config.ratio,
+        width: video_encoder_config.width,
+        height: video_encoder_config.height,
+        frameRate: {
+            ideal: 30,
+            max: 30
+        }
+    });
+
     this.disabled = true;
     record_el.disabled = true;
     pcm_el.disabled = true;
@@ -50,14 +78,7 @@ start_el.addEventListener('click', async function () {
 
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: {
-            width: 1280,
-            height: 720,
-            frameRate: {
-                ideal: 30,
-                max: 30
-            }
-        }
+        video: camera_video_config
     });
 
     video_track = stream.getVideoTracks()[0];
@@ -172,16 +193,7 @@ start_el.addEventListener('click', async function () {
                     type: 'start',
                     readable: video_readable,
                     key_frame_interval,
-                    config: {
-                        //codec: 'avc1.42E01E',
-                        codec: `vp09.${vp9c.profile}.${vp9c.level}.${vp9c.bit_depth}.${vp9c.chroma_subsampling}`,
-                        bitrate: 2500 * 1000,
-                        width: video_settings.width,
-                        height: video_settings.height
-                        /*avc: {
-                            format: 'annexb'
-                        }*/
-                    }
+                    config: video_encoder_config
                 }, [video_readable]);
 
                 audio_worker.postMessage({
@@ -259,8 +271,8 @@ start_el.addEventListener('click', async function () {
             webm_metadata: {
                 max_segment_duration: BigInt(1000000000),
                 video: {
-                    width: video_settings.width,
-                    height: video_settings.height,
+                    width: video_encoder_config.width,
+                    height: video_encoder_config.height,
                     frame_rate: video_settings.frameRate,
                     //codec_id: 'V_MPEG4/ISO/AVC'
                     codec_id: 'V_VP9',
