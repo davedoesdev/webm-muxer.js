@@ -1,6 +1,8 @@
 const video_flag = 0b01;
 const audio_flag = 0b10;
 
+const max_timestamp_mismatch_warnings = 10;
+
 function onerror(e) {
     console.error(e);
     self.postMessage({
@@ -16,6 +18,7 @@ let first_audio_timestamp = null; // using timestamps on encoded chunks
 let next_audio_timestamp = 0; // using durations on encoded chunks
 let last_timestamp = -1;
 let queued_audio = [];
+let num_timestamp_mismatch_warnings = 0;
 
 function send_data(data) {
     webm_muxer.postMessage({
@@ -176,8 +179,12 @@ onmessage = function (e) {
                 if (next_audio_timestamp >= 0) {
                     msg.timestamp = next_audio_timestamp;
                     next_audio_timestamp += msg.duration;
-                    if (msg.timestamp !== timestamp) {
+                    if ((msg.timestamp !== timestamp) &&
+                        (++num_timestamp_mismatch_warnings <= max_timestamp_mismatch_warnings)) {
                         console.warn(`timestamp mismatch: timestamp=${timestamp} durations=${msg.timestamp}`);
+                        if (num_timestamp_mismatch_warnings === max_timestamp_mismatch_warnings) {
+                            console.warn('supressing further timestamp mismatch warnings');
+                        }
                     }
                 } else {
                     msg.timestamp = timestamp;
