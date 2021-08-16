@@ -57,6 +57,17 @@ const resolutions = [{
     }
 ];
 
+export async function supported_video_encoder_configs(constraints) {
+    const r = [];
+    for (let res of resolutions) {
+        const support = await VideoEncoder.isConfigSupported({ ...constraints, ...res });
+        if (support.supported) {
+            r.push(support.config);
+        }
+    }
+    return r;
+}
+
 export async function max_video_encoder_config(constraints) {
     constraints = constraints || {};
     for (let res of resolutions) {
