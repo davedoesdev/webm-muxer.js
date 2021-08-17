@@ -1,7 +1,5 @@
 import {
     max_video_encoder_config,
-    min_camera_video_config,
-    max_camera_video_config
 } from './resolution.js';
 
 function onerror(e) {
@@ -46,7 +44,7 @@ start_el.addEventListener('click', async function () {
     const video_encoder_config = await max_video_encoder_config({
         //codec: 'avc1.42E01E',
         codec: vp9_codec,
-        ratio: '16:9',
+        ratio: 16/9,
         width: 1920,
         height: 1080,
         bitrate: 2500 * 1000,
@@ -54,19 +52,6 @@ start_el.addEventListener('click', async function () {
             format: 'annexb'
         }*/
     });
-
-    const camera_video_constraints = {
-        ratio: video_encoder_config.ratio,
-        width: video_encoder_config.width,
-        height: video_encoder_config.height,
-        frameRate: {
-            ideal: 30,
-            max: 30
-        }
-    };
-
-    const camera_video_config = await min_camera_video_config(camera_video_constraints) ||
-                                await max_camera_video_config(camera_video_constraints);
 
     this.disabled = true;
     record_el.disabled = true;
@@ -82,12 +67,24 @@ start_el.addEventListener('click', async function () {
 
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: camera_video_config
+        video: {
+            aspectRatio: video_encoder_config.ratio,
+            width: video_encoder_config.width,
+            height: video_encoder_config.height,
+            frameRate: {
+                ideal: 30,
+                max: 30
+            }
+        }
     });
 
     video_track = stream.getVideoTracks()[0];
     const video_readable = (new MediaStreamTrackProcessor(video_track)).readable;
     const video_settings = video_track.getSettings();
+    if ((video_settings.width !== video_encoder_config.width) ||
+        (video_settings.height !== video_encoder_config.height)) {
+        console.warn(`camera resolution ${video_settings.width}x${video_settings.height} is different to encoder resolution ${video_encoder_config.width}x${video_encoder_config.height}`);
+    }
 
     audio_track = stream.getAudioTracks()[0];
     const audio_readable = (new MediaStreamTrackProcessor(audio_track)).readable;
