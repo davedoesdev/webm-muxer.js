@@ -1,11 +1,11 @@
 // From https://github.com/webrtcHacks/WebRTC-Camera-Resolution/blob/master/js/resolutionScan.js
 const resolutions = [{
-        label: '4K(UHD)',
+        label: '4K (UHD)',
         width: 3840,
         height: 2160,
         ratio: '16:9'
     }, {
-        label: '1080p(FHD)',
+        label: '1080p (FHD)',
         width: 1920,
         height: 1080,
         ratio: '16:9'
@@ -15,7 +15,7 @@ const resolutions = [{
         height: 1200,
         ratio: '4:3'
     }, {
-        label: '720p(HD)',
+        label: '720p (HD)',
         width: 1280,
         height: 720,
         ratio: '16:9'
@@ -30,7 +30,7 @@ const resolutions = [{
         height: 480,
         ratio: '4:3'
     }, {
-        label: '360p(nHD)',
+        label: '360p (nHD)',
         width: 640,
         height: 360,
         ratio: '16:9'
