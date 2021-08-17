@@ -1,6 +1,7 @@
 import {
     max_video_encoder_config,
-    min_camera_video_config
+    min_camera_video_config,
+    max_camera_video_config
 } from './resolution.js';
 
 function onerror(e) {
