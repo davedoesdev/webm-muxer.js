@@ -62,7 +62,10 @@ export async function supported_video_encoder_configs(constraints) {
     for (let res of resolutions) {
         const support = await VideoEncoder.isConfigSupported({ ...constraints, ...res });
         if (support.supported) {
-            r.push(support.config);
+            r.push({
+                ...res,
+                ...support.config
+            });
         }
     }
     return r;
