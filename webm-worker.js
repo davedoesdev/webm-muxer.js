@@ -18,6 +18,7 @@ let first_audio_timestamp = null; // using timestamps on encoded chunks
 let next_audio_timestamp = 0; // using durations on encoded chunks
 let last_timestamp = -1;
 let queued_audio = [];
+let queued_video = [];
 let num_timestamp_mismatch_warnings = 0;
 
 function send_data(data) {
@@ -51,6 +52,30 @@ function send_msg(msg) {
     send_data(timestamp);
     send_data(duration);
     send_data(msg.data);
+}
+
+function send_msgs() {
+    if (!metadata.video) {
+        while (queued_audio.length > 0) {
+            send_msg(queued_audio.shift());
+        }
+        return;
+    }
+
+    if (!metadata.audio) {
+        while (queued_video.length > 0) {
+            send_msg(queued_video.shift());
+        }
+        return;
+    }
+
+    while ((queued_audio.length !== 0) && (queued_video.length !== 0)) {
+        if (queued_audio[0].timestamp <= queued_video[0].timestamp) {
+            send_msg(queued_audio.shift());
+        } else {
+            send_msg(queued_video.shift());
+        }
+    }
 }
 
 function send_metadata(metadata) {
@@ -157,12 +182,8 @@ onmessage = function (e) {
                     first_video_timestamp = msg.timestamp;
                 }
                 msg.timestamp -= first_video_timestamp;
-
-                while ((queued_audio.length > 0) &&
-                       (queued_audio[0].timestamp <= msg.timestamp)) {
-                    send_msg(queued_audio.shift());
-                }
-                send_msg(msg);
+                queued_video.push(msg);
+                send_msgs();
             }
             break;
 
@@ -189,11 +210,8 @@ onmessage = function (e) {
                 } else {
                     msg.timestamp = timestamp;
                 }
-                if (metadata.video) {
-                    queued_audio.push(msg);
-                } else {
-                    send_msg(msg);
-                }
+                queued_audio.push(msg);
+                send_msgs();
             }
             break;
 
@@ -235,6 +253,18 @@ onmessage = function (e) {
 
         case 'end': {
             if (webm_muxer) {
+                while ((queued_audio.length !== 0) || (queued_video.length !== 0)) {
+                    if (queued_video.length === 0) {
+                        send_msg(queued_audio.shift());
+                    } else if (queued_audio.length === 0) {
+                        send_msg(queued_video.shift());
+                    } else if (queued_audio[0].timestamp <= queued_video[0].timestamp) {
+                        send_msg(queued_audio.shift());
+                    } else {
+                        send_msg(queued_video.shift());
+                    }
+                }
+
                 webm_muxer.postMessage(msg);
             }
             break;
