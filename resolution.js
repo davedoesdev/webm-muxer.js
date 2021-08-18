@@ -57,6 +57,17 @@ const resolutions = [{
     }
 ];
 
+const len = resolutions.length;
+for (let i = 0; i < len; ++i) {
+    const res = resolutions[i];
+    resolutions.push({
+        label: `${res.label} (portrait)`,
+        width: res.height,
+        height: res.width,
+        ratio: 1/res.ratio
+    });
+}
+
 export async function supported_video_encoder_configs(constraints) {
     const r = [];
     for (let res of resolutions) {

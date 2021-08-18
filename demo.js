@@ -41,18 +41,6 @@ const vp9c = Object.fromEntries(Object.entries(vp9_params).map(
 const vp9_codec = `vp09.${vp9c.profile}.${vp9c.level}.${vp9c.bit_depth}.${vp9c.chroma_subsampling}`;
 
 start_el.addEventListener('click', async function () {
-    const video_encoder_config = await max_video_encoder_config({
-        //codec: 'avc1.42E01E',
-        codec: vp9_codec,
-        ratio: 16/9,
-        width: 1920,
-        height: 1080,
-        bitrate: 2500 * 1000,
-        /*avc: {
-            format: 'annexb'
-        }*/
-    });
-
     this.disabled = true;
     record_el.disabled = true;
     pcm_el.disabled = true;
@@ -68,9 +56,8 @@ start_el.addEventListener('click', async function () {
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: {
-            aspectRatio: video_encoder_config.ratio,
-            width: video_encoder_config.width,
-            height: video_encoder_config.height,
+            width: 4096,
+            height: 2160,
             frameRate: {
                 ideal: 30,
                 max: 30
@@ -81,10 +68,25 @@ start_el.addEventListener('click', async function () {
     video_track = stream.getVideoTracks()[0];
     const video_readable = (new MediaStreamTrackProcessor(video_track)).readable;
     const video_settings = video_track.getSettings();
-    if ((video_settings.width !== video_encoder_config.width) ||
-        (video_settings.height !== video_encoder_config.height)) {
-        console.warn(`camera resolution ${video_settings.width}x${video_settings.height} is different to encoder resolution ${video_encoder_config.width}x${video_encoder_config.height}`);
-    }
+
+    const encoder_constraints = {
+        //codec: 'avc1.42E01E',
+        codec: vp9_codec,
+        width: video_settings.width,
+        height: video_settings.height,
+        bitrate: 2500 * 1000,
+        /*avc: {
+            format: 'annexb'
+        }*/
+    };
+
+    const video_encoder_config = await max_video_encoder_config({
+        ...encoder_constraints,
+        ratio: video_settings.width / video_settings.height
+    }) || await max_video_encoder_config(encoder_constraints);
+
+    console.log(`video resolution: ${video_settings.width}x${video_settings.height}`);
+    console.log(`encoder resolution: ${video_encoder_config.width}x${video_encoder_config.height}`);
 
     audio_track = stream.getAudioTracks()[0];
     const audio_readable = (new MediaStreamTrackProcessor(audio_track)).readable;
