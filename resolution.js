@@ -69,14 +69,17 @@ for (let i = 0; i < len; ++i) {
 }
 
 export async function supported_video_encoder_configs(constraints) {
+    constraints = constraints || {};
     const r = [];
     for (let res of resolutions) {
-        const support = await VideoEncoder.isConfigSupported({ ...constraints, ...res });
-        if (support.supported) {
-            r.push({
-                ...res,
-                ...support.config
-            });
+        if (!constraints.ratio || (res.ratio === constraints.ratio)) {
+            const support = await VideoEncoder.isConfigSupported({ ...constraints, ...res });
+            if (support.supported) {
+                r.push({
+                    ...res,
+                    ...support.config
+                });
+            }
         }
     }
     return r;
