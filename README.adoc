@@ -22,8 +22,33 @@ webm-muxer.js is licensed under the terms of the link:LICENCE[MIT licence].
 == Demo
 
 You can see a demo https://rawgit-now.netlify.app/davedoesdev/webm-muxer.js/main/demo.html[here]
-(tested on Chrome 93 Linux with `#enable-experimental-web-platform-features`).
+(tested on Chrome 94 Linux with `#enable-experimental-web-platform-features`).
 The source code for the demo is available in link:demo.html[] and link:demo.js[].
+
+When you click the *Start* button, you'll be asked by the browser to give permission to capture
+your camera and microphone. The data from each is then passed to two separate workers which
+encode the video into VP9 and audio into Opus using the WebCodecs browser API.
+
+The encoded video and audio from each worker is passed into a third worker which muxes it into WebM format.
+
+The WebM output from the third worker is then passed into a `<video>` element via
+https://developer.mozilla.org/en-US/docs/Web/API/MediaSource[`MediaSource`] so you can see
+it on the page.
+
+When you click the **Stop** button, the camera and microphone are closed and the workers will exit
+once they've processed the last of the data.
+
+This all happens in near realtime &mdash; the data is effectively pipelined between the workers
+and you don't have to wait until you press **Stop** to see the output.
+
+You also have the option to record the WebM file and download it to your local disk.
+If you check **Record** before clicking **Start**, the data will be buffered in memory
+and then saved to `camera.webm` once you click **Stop**.
+
+Finally, when you record, you can check **PCM** to have the raw audio data from your microphone
+into the WebM muxer rather than encoding it to Opus. This option is only available when recording
+because the `<video>` element doesn't support PCM playback from WebM files &mdash; you won't
+be able to monitor the video in this case.
 
 == Integration into your application
 
