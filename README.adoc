@@ -46,7 +46,7 @@ If you check **Record** before clicking **Start**, the data will be buffered in 
 and then saved to `camera.webm` once you click **Stop**.
 
 Finally, when you record, you can check **PCM** to have the raw audio data from your microphone
-into the WebM muxer rather than encoding it to Opus. This option is only available when recording
+passed into the WebM muxer rather than encoding it to Opus. This option is only available when recording
 because the `<video>` element doesn't support PCM playback from WebM files &mdash; you won't
 be able to monitor the video in this case.
 
