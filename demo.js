@@ -155,7 +155,7 @@ start_el.addEventListener('click', async function () {
                         const blob = new Blob(chunks, { type: 'video/webm' });
 
                         // From https://github.com/muaz-khan/RecordRTC/blob/master/RecordRTC.js#L1906
-                        // EBML.js copyrights goes to: https://github.com/legokichi/ts-ebml
+                        // EBML.js copyright goes to: https://github.com/legokichi/ts-ebml
 
                         const reader = new EBML.Reader();
                         const decoder = new EBML.Decoder();
