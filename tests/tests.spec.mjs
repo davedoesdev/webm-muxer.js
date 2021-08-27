@@ -1,13 +1,3 @@
-
-// then check we can record and get webm saved out
-// use the tools from the issues to check it's as expected
-
-// then check PCM works
-
-// can we use ffmpeg to play it through fast?
-// or some other tool to validate it?
-// also check it's seekable
-
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { test, expect } from '@playwright/test';
@@ -37,6 +27,7 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     const height = await page.evaluate(() => document.getElementById('video').videoHeight);
     expect(width).toBeGreaterThan(0);
     expect(height).toBeGreaterThan(0);
+
     const [ download ] = await Promise.all([
         page.waitForEvent('download'),
         page.click('#stop')
@@ -72,72 +63,63 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     expect(tracks.Audio.Delay).toBe('0.000');
 
     ({ stdout } = await execFileP('mkvmerge', [ '-J', path ]));
+    const info = JSON.parse(stdout);
 
-/*
-{
-  "attachments": [],
-  "chapters": [],
-  "container": {
-    "properties": {
-      "container_type": 17,
-      "duration": 13440000000,
-      "is_providing_timestamps": true,
-      "muxing_application": "libwebm-0.3.0.0",
-      "writing_application": "WebMLiveMuxer"
-    },
-    "recognized": true,
-    "supported": true,
-    "type": "Matroska"
-  },
-  "errors": [],
-  "file_name": "/tmp/playwright-artifacts-wKWDbD/be3d52c2-ee4f-4e6b-ab03-ed2943d78a74",
-  "global_tags": [],
-  "identification_format_version": 14,
-  "track_tags": [],
-  "tracks": [
-    {
-      "codec": "VP9",
-      "id": 0,
-      "properties": {
-        "codec_id": "V_VP9",
-        "codec_private_data": "01010002010a030108040101",
-        "codec_private_length": 12,
-        "default_duration": 33333333,
-        "default_track": true,
-        "display_dimensions": "3840x2160",
-        "display_unit": 0,
-        "enabled_track": true,
-        "forced_track": false,
-        "language": "eng",
-        "minimum_timestamp": 0,
-        "number": 1,
-        "pixel_dimensions": "3840x2160",
-        "uid": 53530440274049695
-      },
-      "type": "video"
-    },
-      "codec": "Opus",
-      "id": 1,
-      "properties": {
-        "audio_channels": 1,
-        "audio_sampling_frequency": 48000,
-        "codec_id": "A_OPUS",
-        "codec_private_data": "4f707573486561640101000080bb0000000000",
-        "codec_private_length": 19,
-        "default_track": true,
-        "enabled_track": true,
-        "forced_track": false,
-        "language": "eng",
-        "minimum_timestamp": 0,
-        "number": 2,
-        "uid": 11423568537332234
-      },
-      "type": "audio"
-    }
-  ],
-  "warnings": []
-}
-*/
+    expect(info.identification_format_version).toBe(14);
+    expect(info.attachments.length).toBe(0);
+    expect(info.chapters.length).toBe(0);
+    expect(info.container.properties.container_type).toBe(17); // https://gitlab.com/mbunkus/mkvtoolnix/-/blob/main/src/common/file_types.h file_type_e::matroska
+    expect(info.container.properties.duration).toBeGreaterThanOrEqual(10000000000);
+    expect(info.container.properties.is_providing_timestamps).toBe(true);
+    expect(info.container.properties.muxing_application).toBe('libwebm-0.3.0.0');
+    expect(info.container.properties.writing_application).toBe('WebMLiveMuxer');
+    expect(info.container.recognized).toBe(true);
+    expect(info.container.supported).toBe(true);
+    expect(info.container.type).toBe('Matroska');
+    expect(info.errors.length).toBe(0);
+    expect(info.warnings.length).toBe(0);
+    expect(info.file_name).toBe(path);
+    expect(info.global_tags.length).toBe(0);
+    expect(info.track_tags.length).toBe(0);
+    expect(info.tracks.length).toBe(2);
+
+    expect(info.tracks[0].codec).toBe('VP9');
+    expect(info.tracks[0].id).toBe(0);
+    expect(info.tracks[0].type).toBe('video');
+    expect(info.tracks[0].properties.codec_id).toBe('V_VP9');
+    expect(info.tracks[0].properties.codec_private_data).toBe('01010002010a030108040101');
+    expect(info.tracks[0].properties.codec_private_length).toBe(12);
+    expect(info.tracks[0].properties.default_duration).toBe(Math.floor(1000000000 / 30)); // (1s / frame rate)
+    expect(info.tracks[0].properties.default_track).toBe(true);
+    expect(info.tracks[0].properties.display_dimensions).toBe(`${width}x${height}`);
+    expect(info.tracks[0].properties.display_unit).toBe(0); // pixels
+    expect(info.tracks[0].properties.enabled_track).toBe(true);
+    expect(info.tracks[0].properties.forced_track).toBe(false);
+    expect(info.tracks[0].properties.language).toBe('eng');
+    expect(info.tracks[0].properties.minimum_timestamp).toBe(0);
+    expect(info.tracks[0].properties.number).toBe(1);
+    expect(info.tracks[0].properties.pixel_dimensions).toBe(`${width}x${height}`);
+
+    expect(info.tracks[1].codec).toBe('Opus');
+    expect(info.tracks[1].id).toBe(1);
+    expect(info.tracks[1].type).toBe('audio');
+    expect(info.tracks[1].properties.audio_channels).toBe(1);
+    expect(info.tracks[1].properties.audio_sampling_frequency).toBe(48000);
+    expect(info.tracks[1].properties.codec_id).toBe('A_OPUS');
+    expect(info.tracks[1].properties.codec_private_data).toBe('4f707573486561640101000080bb0000000000');
+    expect(info.tracks[1].properties.codec_private_length).toBe(19);
+    expect(info.tracks[1].properties.default_track).toBe(true);
+    expect(info.tracks[1].properties.enabled_track).toBe(true);
+    expect(info.tracks[1].properties.forced_track).toBe(false);
+    expect(info.tracks[1].properties.language).toBe('eng');
+    expect(info.tracks[1].properties.minimum_timestamp).toBe(0);
+    expect(info.tracks[1].properties.number).toBe(2);
+
+// can we use ffmpeg to play it through fast?
+// or some other tool to validate it?
+// also check it's seekable
+
+// then check PCM works
 
 
 
@@ -145,5 +127,4 @@ test.only('records to a vaild WebM file', async ({ page }) => {
 });
 
 
-// check saved webm resolution matches one in page
 
