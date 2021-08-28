@@ -1,4 +1,5 @@
 import { execFile } from 'child_process';
+import { readFile } from 'fs/promises';
 import { promisify } from 'util';
 import { test, expect } from '@playwright/test';
 
@@ -33,7 +34,8 @@ test.only('records to a vaild WebM file', async ({ page }) => {
         page.click('#stop')
     ]);
     const path = await download.path();
-    let { stdout } = await execFileP('mediainfo', [ '--Output=JSON', path ]);
+    let { stdout, stderr } = await execFileP('mediainfo', [ '--Output=JSON', path ]);
+    expect(stderr).toBe('');
     console.log(stdout);
     const tracks = {};
     for (let track of JSON.parse(stdout).media.track) {
@@ -117,7 +119,6 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     expect(info.tracks[1].properties.minimum_timestamp).toBe(0);
     expect(info.tracks[1].properties.number).toBe(2);
 
-    let stderr;
     ({ stdout, stderr } = await execFileP('ffmpeg', [
         '-v', 'error',
         '-i', path,
@@ -139,8 +140,18 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     expect(stdout).toBe('');
     expect(stderr).toBe('');
 
-    // Check there are >1 cues in the metadata using mkvinfo -v -v
+    // Check there are cues in the metadata (i.e. it's seekable).
+    // Exits with status 2 if no cues were found (so throws an exception).
+    ({ stdout, stderr } = await execFileP('mkvextract', [
+        path,
+        'cues', `0:${path}.cues`
+    ]));
+    expect(stdout).toBe(`The cues for track 0 are written to '${path}.cues'.\n`);
+    expect(stderr).toBe('');
+    expect((await readFile(`${path}.cues`)).length).toBeGreaterThan(0);
 
+
+// sometimes Duration of a track isn't listed by mediainfo
 // then check PCM works
 
 
