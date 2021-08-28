@@ -126,7 +126,7 @@ start_el.addEventListener('click', async function () {
     const queue = [];
     const chunks = [];
     let rec_size = 0;
-    const key_frame_interval = 10;
+    const key_frame_interval = 1;
     const buffer_delay = 2;
 
     const webm_worker = new Worker('./webm-worker.js');

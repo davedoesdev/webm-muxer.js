@@ -34,6 +34,7 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     ]);
     const path = await download.path();
     let { stdout } = await execFileP('mediainfo', [ '--Output=JSON', path ]);
+    console.log(stdout);
     const tracks = {};
     for (let track of JSON.parse(stdout).media.track) {
         tracks[track['@type']] = track;
@@ -42,14 +43,14 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     expect(tracks.General.AudioCount).toBe('1');
     expect(tracks.General.Format).toBe('WebM');
     expect(tracks.General.Format_Version).toBe('4');
-    expect(parseInt(tracks.General.Duration)).toBeGreaterThanOrEqual(10);
+    expect(parseFloat(tracks.General.Duration)).toBeGreaterThanOrEqual(10);
     expect(tracks.General.IsStreamable).toBe('Yes');
     expect(tracks.General.Encoded_Application).toBe('WebMLiveMuxer');
     expect(tracks.General.Encoded_Library).toBe('libwebm-0.3.0.0');
 
     expect(tracks.Video.Format).toBe('VP9');
     expect(tracks.Video.CodecID).toBe('V_VP9');
-    expect(parseInt(tracks.Video.Duration)).toBeGreaterThanOrEqual(10);
+    expect(parseFloat(tracks.Video.Duration)).toBeGreaterThanOrEqual(10);
     expect(parseInt(tracks.Video.Width)).toBe(width);
     expect(parseInt(tracks.Video.Height)).toBe(height);
 
@@ -63,6 +64,7 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     expect(tracks.Audio.Delay).toBe('0.000');
 
     ({ stdout } = await execFileP('mkvmerge', [ '-J', path ]));
+    console.log(stdout);
     const info = JSON.parse(stdout);
 
     expect(info.identification_format_version).toBe(14);
@@ -115,9 +117,29 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     expect(info.tracks[1].properties.minimum_timestamp).toBe(0);
     expect(info.tracks[1].properties.number).toBe(2);
 
-// can we use ffmpeg to play it through fast?
-// or some other tool to validate it?
-// also check it's seekable
+    let stderr;
+    ({ stdout, stderr } = await execFileP('ffmpeg', [
+        '-v', 'error',
+        '-i', path,
+        '-f', 'null',
+        '-'
+    ]));
+    expect(stdout).toBe('');
+    expect(stderr).toBe('');
+
+    // Check there are keyframes in the video
+    ({ stdout, stderr } = await execFileP('ffmpeg', [
+        '-ss', '5',
+        '-noaccurate_seek', // nearest keyframe
+        '-v', 'error',
+        '-i', path,
+        '-f', 'null',
+        '-'
+    ]));
+    expect(stdout).toBe('');
+    expect(stderr).toBe('');
+
+    // Check there are >1 cues in the metadata using mkvinfo -v -v
 
 // then check PCM works
 
