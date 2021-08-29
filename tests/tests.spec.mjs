@@ -148,7 +148,8 @@ test.only('records to a vaild WebM file', async ({ page }) => {
     ]));
     expect(stdout).toBe(`The cues for track 0 are written to '${path}.cues'.\n`);
     expect(stderr).toBe('');
-    expect((await readFile(`${path}.cues`)).length).toBeGreaterThan(0);
+    const cues = (await readFile(`${path}.cues`)).toString();
+    expect(cues.trim().split('\n').length).toBeGreaterThanOrEqual(10);
 
 
 // sometimes Duration of a track isn't listed by mediainfo

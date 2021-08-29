@@ -31,6 +31,7 @@ function send_data(data) {
 function send_msg(msg) {
     if (msg.timestamp < last_timestamp)  {
         console.warn(`${msg.type} timestamp ${msg.timestamp} is older than last timestamp ${last_timestamp}`);
+        msg.timestamp = last_timestamp + 1;
     }
     last_timestamp = msg.timestamp;
 
