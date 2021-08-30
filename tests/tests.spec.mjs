@@ -85,7 +85,14 @@ for (let pcm of [false, true]) {
 
         expect(tracks.Video.Format).toBe('VP9');
         expect(tracks.Video.CodecID).toBe('V_VP9');
-        expect(parseFloat(tracks.Video.Duration)).toBeGreaterThanOrEqual(10);
+        if (tracks.Video.FrameRate_Mode === 'VFR') {
+            // mediainfo does VFR detection using timecodes so occasionally we trigger that detection
+            // https://github.com/MediaArea/MediaInfoLib/commit/f935443d48731c6524a69e8c25a04fcde9b4547d
+            expect(parseFloat(tracks.Video.FrameRate_Original)).toBe(30);
+        } else {
+            expect(tracks.Video.FrameRate_Mode).toBe('CFR');
+            expect(parseFloat(tracks.Video.Duration)).toBeGreaterThanOrEqual(10);
+        }
         if (pcm) {
             width = parseInt(tracks.Video.Width);
             height = parseInt(tracks.Video.Height);
@@ -96,6 +103,7 @@ for (let pcm of [false, true]) {
 
         expect(tracks.Audio.Format).toBe(pcm ? 'PCM' : 'Opus');
         expect(tracks.Audio.CodecID).toBe(pcm ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS');
+        expect(parseFloat(tracks.Audio.Duration)).toBeGreaterThanOrEqual(10);
         expect(tracks.Audio.Channels).toBe('1');
         if (!pcm) {
             expect(tracks.Audio.ChannelPositions).toBe('Front: C');
