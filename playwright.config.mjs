@@ -9,7 +9,11 @@ const config = {
         },
         contextOptions: {
             acceptDownloads: true
-        }
+        },
+    },
+    reportSlowTests: {
+        max: 0,
+        threshold: 60000
     },
     webServer: {
         command: 'npx serve',

@@ -166,6 +166,7 @@ start_el.addEventListener('click', async function () {
                             reader.read(elm);
                         }
                         reader.stop();
+                        console.log(`duration: ${reader.duration}`);
                         const refinedMetadataBuf = EBML.tools.makeMetadataSeekable(reader.metadatas, reader.duration, reader.cues);
                         rec_info.innerText = `Indexed ${rec_size} bytes`;
 
