@@ -142,7 +142,9 @@ for (let pcm of [false, true]) {
         expect(info.tracks[0].properties.codec_id).toBe('V_VP9');
         expect(info.tracks[0].properties.codec_private_data).toBe('01010002010a030108040101');
         expect(info.tracks[0].properties.codec_private_length).toBe(12);
-        expect(info.tracks[0].properties.default_duration).toBe(Math.floor(1000000000 / 30)); // (1s / frame rate)
+        if (info.identification_format_version >= 14) {
+            expect(info.tracks[0].properties.default_duration).toBe(Math.floor(1000000000 / 30)); // (1s / frame rate)
+        }
         expect(info.tracks[0].properties.default_track).toBe(true);
         expect(info.tracks[0].properties.display_dimensions).toBe(`${width}x${height}`);
         expect(info.tracks[0].properties.display_unit).toBe(0); // pixels
