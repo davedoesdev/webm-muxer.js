@@ -118,7 +118,7 @@ for (let pcm of [false, true]) {
         expect(stderr).toBe('');
         const info = JSON.parse(stdout);
 
-        expect(info.identification_format_version).toBe(14);
+        expect(info.identification_format_version).toBeGreaterThanOrEqual(12);
         expect(info.attachments.length).toBe(0);
         expect(info.chapters.length).toBe(0);
         expect(info.container.properties.container_type).toBe(17); // https://gitlab.com/mbunkus/mkvtoolnix/-/blob/main/src/common/file_types.h file_type_e::matroska
