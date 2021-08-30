@@ -19,10 +19,11 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install
-        run:
-          - npm install --save-dev @playwright/test serve
-          - npx playwright install
+      - name: Install dependencies
+        run: npm install --save-dev @playwright/test serve
+
+      - name: Install browsers
+        run: npx playwright install
 
       - name: Run tests
         run: npx playwright test
