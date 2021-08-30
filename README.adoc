@@ -1,4 +1,4 @@
-= WebM muxer for WebCodecs
+= WebM muxer for WebCodecs {nbsp}{nbsp}{nbsp} image:https://github.com/davedoesdev/webm-muxer.js/workflows/ci/badge.svg[CI status,link=https://github.com/davedoesdev/webm-muxer.js/actions]
 
 == Description
 
