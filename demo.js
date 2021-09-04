@@ -1,5 +1,5 @@
 import {
-    max_video_encoder_config,
+    max_video_config,
 } from './resolution.js';
 
 function onerror(e) {
@@ -80,10 +80,10 @@ start_el.addEventListener('click', async function () {
         }*/
     };
 
-    const video_encoder_config = await max_video_encoder_config({
+    const video_encoder_config = await max_video_config({
         ...encoder_constraints,
         ratio: video_settings.width / video_settings.height
-    }) || await max_video_encoder_config(encoder_constraints);
+    }) || await max_video_config(encoder_constraints);
 
     console.log(`video resolution: ${video_settings.width}x${video_settings.height}`);
     console.log(`encoder resolution: ${video_encoder_config.width}x${video_encoder_config.height}`);

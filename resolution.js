@@ -68,7 +68,10 @@ for (let i = 0; i < len; ++i) {
     });
 }
 
-export async function supported_video_encoder_configs(constraints) {
+export async function supported_video_configs(constraints, all_if_no_webcodecs) {
+    if (!('VideoEncoder' in window)) {
+        return all_if_no_webcodecs ? resolutions : [];
+    }
     const r = [];
     for (let res of resolutions) {
         const support = await VideoEncoder.isConfigSupported({ ...constraints, ...res });
@@ -82,18 +85,22 @@ export async function supported_video_encoder_configs(constraints) {
     return r;
 }
 
-export async function max_video_encoder_config(constraints) {
+export async function max_video_config(constraints, all_if_no_webcodecs) {
     constraints = constraints || {};
     for (let res of resolutions) {
         if ((!constraints.ratio || (res.ratio === constraints.ratio)) &&
             (!constraints.width || (res.width <= constraints.width)) &&
             (!constraints.height || (res.height <= constraints.height))) {
-            const support = await VideoEncoder.isConfigSupported({ ...constraints, ...res });
-            if (support.supported) {
-                return {
-                    ...res,
-                    ...support.config
-                };
+            if ('VideoEncoder' in window) {
+                const support = await VideoEncoder.isConfigSupported({ ...constraints, ...res });
+                if (support.supported) {
+                    return {
+                        ...res,
+                        ...support.config
+                    };
+                }
+            } else if (all_if_no_webcodecs) {
+                return res;
             }
         }
     }
