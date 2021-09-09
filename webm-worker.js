@@ -59,7 +59,43 @@ function send_msg(msg) {
     send_data(msg.data);
 }
 
-function send_msgs() {
+function get_video_ts(vmsg) {
+    const vtimestamp = last_video_out_timestamp + (vmsg.timestamp - last_video_in_timestamp);
+    if (vtimestamp <= last_timestamp) {
+        if (vtimestamp < last_timestamp) {
+            console.warn(`video timestamp ${vtimestamp} is older than last timestamp ${last_timestamp}`);
+        }
+        return last_timestamp + 1;
+    }
+    return vtimestamp;
+}
+
+function set_video_ts(vmsg, vtimestamp) {
+    last_video_in_timestamp = vmsg.timestamp;
+    vmsg.timestamp = vtimestamp;
+    last_video_out_timestamp = vtimestamp;
+    return vmsg;
+}
+
+function get_audio_ts(amsg) {
+    const atimestamp = last_audio_out_timestamp + (amsg.timestamp - last_audio_in_timestamp);
+    if (atimestamp <= last_timestamp) {
+        if (atimestamp < last_timestamp) {
+            console.warn(`audio timestamp ${atimestamp} is older than last timestamp ${last_timestamp}`);
+        }
+        return last_timestamp + 1;
+    }
+    return atimestamp;
+}
+
+function set_audio_ts(amsg, atimestamp) {
+    last_audio_in_timestamp = amsg.timestamp;
+    amsg.timestamp = atimestamp;
+    last_audio_out_timestamp = atimestamp;
+    return amsg;
+}
+
+function send_msgs(opts) {
     if (!metadata.video) {
         while (queued_audio.length > 0) {
             send_msg(queued_audio.shift());
@@ -75,43 +111,24 @@ function send_msgs() {
     }
 
     while ((queued_video.length > 0) && (queued_audio.length > 0)) {
-        const vmsg = queued_video[0];
-        let vtimestamp = last_video_out_timestamp + (vmsg.timestamp - last_video_in_timestamp);
-        last_video_in_timestamp = vmsg.timestamp;
-        if (vtimestamp <= last_timestamp) {
-            if (vtimestamp < last_timestamp) {
-                console.warn(`video timestamp ${vtimestamp} is older than last timestamp ${last_timestamp}`);
-            }
-            vtimestamp = last_timestamp + 1;
-        }
+        const vtimestamp = get_video_ts(queued_video[0]);
+        const atimestamp = get_audio_ts(queued_audio[0]);
 
-        const amsg = queued_audio[0];
-        let atimestamp = last_audio_out_timestamp + (amsg.timestamp - last_audio_in_timestamp);
-        last_audio_in_timestamp = amsg.timestamp;
-        if (atimestamp <= last_timestamp) {
-            if (atimestamp < last_timestamp) {
-                console.warn(`audio timestamp ${atimestamp} is older than last timestamp ${last_timestamp}`);
-            }
-            atimestamp = last_timestamp + 1;
-        }
-
-        if (atimestamp <= vtimestamp) {
-            amsg.timestamp = atimestamp;
-            last_audio_out_timestamp = atimestamp;
-            send_msg(queued_audio.shift());
+        if (vtimestamp < atimestamp) {
+            send_msg(set_video_ts(queued_video.shift(), vtimestamp));
         } else {
-            vmsg.timestamp = vtimestamp;
-            last_video_out_timestamp = vtimestamp;
-            send_msg(queued_video.shift());
+            send_msg(set_audio_ts(queued_audio.shift(), atimestamp));
         }
     }
 
-    while (queued_video.length > options.video_queue_limit) {
-        send_msg(queued_video.shift());
+    while (queued_video.length > opts.video_queue_limit) {
+        const vtimestamp = get_video_ts(queued_video[0]);
+        send_msg(set_video_ts(queued_video.shift(), vtimestamp));
     }
 
-    while (queued_audio.length > options.audio_queue_limit) {
-        send_msg(queued_audio.shift());
+    while (queued_audio.length > opts.audio_queue_limit) {
+        const atimestamp = get_audio_ts(queued_audio[0]);
+        send_msg(set_audio_ts(queued_audio.shift(), atimestamp));
     }
 }
 
@@ -220,7 +237,7 @@ onmessage = function (e) {
                 }
                 msg.timestamp -= first_video_timestamp;
                 queued_video.push(msg);
-                send_msgs();
+                send_msgs(options);
             }
             break;
 
@@ -248,7 +265,7 @@ onmessage = function (e) {
                     msg.timestamp = timestamp;
                 }
                 queued_audio.push(msg);
-                send_msgs();
+                send_msgs(options);
             }
             break;
 
@@ -301,18 +318,7 @@ onmessage = function (e) {
 
         case 'end': {
             if (webm_muxer) {
-                while ((queued_audio.length !== 0) || (queued_video.length !== 0)) {
-                    if (queued_video.length === 0) {
-                        send_msg(queued_audio.shift());
-                    } else if (queued_audio.length === 0) {
-                        send_msg(queued_video.shift());
-                    } else if (queued_audio[0].timestamp <= queued_video[0].timestamp) {
-                        send_msg(queued_audio.shift());
-                    } else {
-                        send_msg(queued_video.shift());
-                    }
-                }
-
+                send_msgs({ video_queue_limit: 0, audio_queue_limit: 0 });
                 webm_muxer.postMessage(msg);
             }
             break;

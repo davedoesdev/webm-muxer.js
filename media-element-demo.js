@@ -14,6 +14,7 @@ const save_el = document.getElementById('save');
 const video_el = document.getElementById('video');
 const audio_el = document.getElementById('audio');
 
+let stopped = false;
 let video_loaded = false;
 let audio_loaded = false;
 
@@ -60,7 +61,7 @@ function start() {
                 break;
 
             default:
-                save_el.disabled = false;
+                save_el.disabled = stopped;
                 webm_worker.postMessage(msg, [msg.data]);
                 break;
         }
@@ -179,13 +180,14 @@ function start() {
             }
         },
         webm_options: {
-            video_queue_limit: 500,
-            audio_queue_limit: 480
+            video_queue_limit: 30,
+            audio_queue_limit: 0
         }
     });
 
     save_el.addEventListener('click', function () {
         this.disabled = true;
+        stopped = true;
 
         video_track.stop();
         video_el.pause();
