@@ -223,7 +223,7 @@ start_el.addEventListener('click', async function () {
                     rec_info.innerText = `Recorded ${rec_size} bytes`;
                 }
                 queue.push(msg.data);
-                if (!pcm_el.checked && !buffer.updating) {
+                if (!pcm_el.checked) {
                     remove_append();
                 }
                 break;
@@ -235,6 +235,9 @@ start_el.addEventListener('click', async function () {
     };
 
     function remove_append() {
+        if (buffer.updating) {
+            return;
+        }
         const range = buffer.buffered;
         if (range.length > 0) {
             buf_info.innerText = `Buffered ${range.start(0)} .. ${range.end(0)}`;

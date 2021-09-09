@@ -12,13 +12,18 @@ function onerror(e) {
 }
 
 let metadata;
+let options;
 let webm_muxer;
 let first_video_timestamp = null;
 let first_audio_timestamp = null; // using timestamps on encoded chunks
 let next_audio_timestamp = 0; // using durations on encoded chunks
 let last_timestamp = -1;
-let queued_audio = [];
+let last_video_in_timestamp = 0;
+let last_video_out_timestamp = 0;
+let last_audio_in_timestamp = 0;
+let last_audio_out_timestamp = 0;
 let queued_video = [];
+let queued_audio = [];
 let num_timestamp_mismatch_warnings = 0;
 
 function send_data(data) {
@@ -69,12 +74,44 @@ function send_msgs() {
         return;
     }
 
-    while ((queued_audio.length !== 0) && (queued_video.length !== 0)) {
-        if (queued_audio[0].timestamp <= queued_video[0].timestamp) {
+    while ((queued_video.length > 0) && (queued_audio.length > 0)) {
+        const vmsg = queued_video[0];
+        let vtimestamp = last_video_out_timestamp + (vmsg.timestamp - last_video_in_timestamp);
+        last_video_in_timestamp = vmsg.timestamp;
+        if (vtimestamp <= last_timestamp) {
+            if (vtimestamp < last_timestamp) {
+                console.warn(`video timestamp ${vtimestamp} is older than last timestamp ${last_timestamp}`);
+            }
+            vtimestamp = last_timestamp + 1;
+        }
+
+        const amsg = queued_audio[0];
+        let atimestamp = last_audio_out_timestamp + (amsg.timestamp - last_audio_in_timestamp);
+        last_audio_in_timestamp = amsg.timestamp;
+        if (atimestamp <= last_timestamp) {
+            if (atimestamp < last_timestamp) {
+                console.warn(`audio timestamp ${atimestamp} is older than last timestamp ${last_timestamp}`);
+            }
+            atimestamp = last_timestamp + 1;
+        }
+
+        if (atimestamp <= vtimestamp) {
+            amsg.timestamp = atimestamp;
+            last_audio_out_timestamp = atimestamp;
             send_msg(queued_audio.shift());
         } else {
+            vmsg.timestamp = vtimestamp;
+            last_video_out_timestamp = vtimestamp;
             send_msg(queued_video.shift());
         }
+    }
+
+    while (queued_video.length > options.video_queue_limit) {
+        send_msg(queued_video.shift());
+    }
+
+    while (queued_audio.length > options.audio_queue_limit) {
+        send_msg(queued_audio.shift());
     }
 }
 
@@ -217,7 +254,18 @@ onmessage = function (e) {
 
         case 'start': {
             metadata = msg.webm_metadata;
+            options = {
+                video_queue_limit: Infinity,
+                audio_queue_limit: Infinity,
+                use_audio_timestamps: false,
+                ...msg.webm_options
+            };
             delete msg.webm_metadata;
+            delete msg.webm_options;
+
+            if (options.use_audio_timestamps) {
+                next_audio_timestamp = -1;
+            }
 
             webm_muxer = new Worker('./webm-muxer.js');
             webm_muxer.onerror = onerror;
