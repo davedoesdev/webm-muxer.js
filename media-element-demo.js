@@ -181,7 +181,8 @@ function start() {
         },
         webm_options: {
             video_queue_limit: 30,
-            audio_queue_limit: 0
+            audio_queue_limit: 16,
+            use_audio_timestamps: true
         }
     });
 
