@@ -7,6 +7,10 @@ static unsigned char codec_id[256];
 const int video_flag = 0b01;
 const int audio_flag = 0b10;
 
+const int video_type_flag  = 0b001;
+const int key_flag         = 0b010;
+const int new_cluster_flag = 0b100;
+
 extern "C" {
     int emscripten_read_async(unsigned char* buf, int size);
     int emscripten_write(unsigned char* buf, int size);
@@ -144,24 +148,15 @@ static int main2(int argc, const char** argv) {
     }
 
     while (true) {
-        // read frame data type (0 = video, 1 = audio) and whether it's a key frame
-        unsigned char type;
-        bool is_key;
-        auto len = emscripten_read_async(buf, 2);
+        // read frame header
+        uint8_t header;
+        auto len = emscripten_read_async(reinterpret_cast<unsigned char*>(&header), sizeof(header));
         if (len == 0) {
             std::cout << "End of input" << std::endl;
             muxer.Finalize();
-        } else if (len != 2) {
+        } else if (len != sizeof(header)) {
             std::cerr << "Failed to read frame header" << std::endl;
             return 1;
-        } else {
-            type = buf[0];
-            if (type > 1) {
-                std::cerr << "Invalid type byte: " << static_cast<unsigned>(buf[0]) << std::endl;
-                return 1;
-            }
-
-            is_key = buf[1] != 0;
         }
 
         // write any muxed data that's ready
@@ -217,10 +212,12 @@ static int main2(int argc, const char** argv) {
 
         // mux frame data
         int r;
-        if (type == 0) {
-            r = muxer.WriteVideoFrame(buf, len, timestamp, duration, is_key);
+        const auto is_key = header & key_flag;
+        const auto new_cluster = header & new_cluster_flag;
+        if (header & video_type_flag) {
+            r = muxer.WriteVideoFrame(buf, len, timestamp, duration, is_key, new_cluster);
         } else {
-            r = muxer.WriteAudioFrame(buf, len, timestamp, duration, is_key);
+            r = muxer.WriteAudioFrame(buf, len, timestamp, duration, is_key, new_cluster);
         }
         if (r != webm_tools::WebMLiveMuxer::kSuccess) {
             std::cerr << "Failed to mux frame: " << r << std::endl;

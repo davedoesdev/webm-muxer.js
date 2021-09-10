@@ -1,5 +1,11 @@
+// metadata flags
 const video_flag = 0b01;
 const audio_flag = 0b10;
+
+// header flags
+const video_type_flag  = 0b001;
+const key_flag         = 0b010;
+const new_cluster_flag = 0b100;
 
 const max_timestamp_mismatch_warnings = 10;
 
@@ -42,10 +48,12 @@ function send_msg(msg) {
     }
     last_timestamp = msg.timestamp;
 
-    const header = new ArrayBuffer(2);
-    const view = new DataView(header);
-    view.setUint8(0, msg.type === 'video-data' ? 0 : 1);
-    view.setUint8(1, msg.is_key ? 1 : 0);
+    const header = new ArrayBuffer(1);
+    new DataView(header).setUint8(0,
+        (msg.type == 'video-data' ? video_type_flag : 0) |
+        (msg.is_key ? key_flag : 0) |
+        (msg.new_cluster ? new_cluster_flag : 0),
+        true);
 
     const timestamp = new ArrayBuffer(8);
     new DataView(timestamp).setBigUint64(0, BigInt(msg.timestamp), true);
@@ -127,7 +135,11 @@ function send_msgs(opts) {
     }
 
     while (queued_audio.length > opts.audio_queue_limit) {
-        const atimestamp = get_audio_ts(queued_audio[0]);
+        const msg = queued_audio[0];
+        if (queued_audio.length === 1) {
+            msg.new_cluster = true;
+        }
+        const atimestamp = get_audio_ts(msg);
         send_msg(set_audio_ts(queued_audio.shift(), atimestamp));
     }
 }
@@ -138,7 +150,10 @@ function send_metadata(metadata) {
     send_data(max_cluster_duration);
 
     const flags = new ArrayBuffer(1);
-    new DataView(flags).setUint8(0,(metadata.video ? video_flag : 0) | (metadata.audio ? audio_flag : 0), true);
+    new DataView(flags).setUint8(0,
+        (metadata.video ? video_flag : 0) |
+        (metadata.audio ? audio_flag : 0),
+        true);
     send_data(flags);
 
     if (metadata.video) {
