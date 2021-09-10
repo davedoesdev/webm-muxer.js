@@ -128,6 +128,39 @@ the muxer has flushed its buffers and sent back all the muxed data).
 `channels`:::: Number of channels in the encoded audio.
 `bit_depth`:::: Number of bits in each sample. This property is usually used only for PCM encoded audio.
 `codec_id`:::: WebM codec ID to describe the audio encoding method, e.g. `"A_OPUS"` or `"A_PCM/FLOAT/IEEE"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
++
+`webm_options`:: An object with the following properties:
++
+[horizontal]
+`video_queue_limit`:::: The number of video frames to buffer while waiting for audio with a later timestamp to arrive.
++
+Defaults to `Infinity`, i.e. all data is muxed in timestamp order, which is suitable if you
+have continuous data. However, if you have intermittent audio or video, including delayed start
+of one with respect to the other, then you can try setting `video_queue_limit` to a small value.
++
+For example, if your video is 30fps then setting `video_queue_limit` to `30` will buffer a
+maximum of one second of video while waiting for audio. If audio subsequently arrives that
+has a timestamp earlier than the video, its timestamp is modified in order to maintain
+a monotonically increasing timestamp in the muxed output. This may result in the audio sounding
+slower.
++
+In general, if your audio and video is continuous and start at the same time, leave `video_queue_limit`
+at the default. Otherwise, the lower you set it, the more accurate the first audio timestamp in the muxed
+output will be, but subsequent audio timestamps may be altered. The higher you set it, the less accurate
+the first audio timestamp will be but subsequent audio timestamps are less likely to be altered.
+This is because WebCodecs provides no way of synchronizing media streams &mdash; in fact audio and video
+timestamps are completely unrelated to each other. So we have to base everything off initial arrival
+time in the muxer.
+`audio_queue_limit`:::: The number of audio frames to buffer while waiting for video with a later timestamp to arrive.
++
+Same as `video_queue_limit` but for audio.
+`use_audio_timestamps`:::: Always use timestamps in the encoded audio data rather than calculate them from
+the duration of each audio chunk.
++
+Defaults to `false`, i.e. the timestamp of an audio chunk is set to sum of the durations of all the preceding
+audio chunks. This is suitable for continuous audio but if you have intermittent audio, set this to `false`.
++
+Note that I've found the duration method to be more accurate than the timestamps WebCodecs generates.
 
 . To stop muxing cleanly, wait for exit messages from all the Workers running `encoder-worker.js` and then send a message to the Worker running `webm-worker.js` with the following property:
 [horizontal]
