@@ -28,6 +28,7 @@ let last_video_in_timestamp = 0;
 let last_video_out_timestamp = 0;
 let last_audio_in_timestamp = 0;
 let last_audio_out_timestamp = 0;
+let audio_msgs_since_last_cluster = 0;
 let queued_video = [];
 let queued_audio = [];
 let num_timestamp_mismatch_warnings = 0;
@@ -137,8 +138,10 @@ function send_msgs(opts) {
 
     while (queued_audio.length > opts.audio_queue_limit) {
         const msg = queued_audio.shift();
-        if (queued_audio.length === opts.audio_queue_limit) {
+        if ((queued_audio.length === opts.audio_queue_limit) &&
+            (++audio_msgs_since_last_cluster > opts.audio_queue_limit)) {
             msg.new_cluster = true;
+            audio_msgs_since_last_cluster = 0;
         }
         const atimestamp = get_audio_ts(msg);
         send_msg(set_audio_ts(msg, atimestamp));
