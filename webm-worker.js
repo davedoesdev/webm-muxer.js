@@ -337,6 +337,9 @@ onmessage = function (e) {
 
         case 'end': {
             if (webm_muxer) {
+                if (queued_audio.length > 0) {
+                    queued_audio[0].new_cluster = true;
+                }
                 send_msgs({ video_queue_limit: 0, audio_queue_limit: 0 });
                 webm_muxer.postMessage(msg);
             }
