@@ -130,17 +130,18 @@ function send_msgs(opts) {
     }
 
     while (queued_video.length > opts.video_queue_limit) {
-        const vtimestamp = get_video_ts(queued_video[0]);
-        send_msg(set_video_ts(queued_video.shift(), vtimestamp));
+        const msg = queued_video.shift();
+        const vtimestamp = get_video_ts(msg);
+        send_msg(set_video_ts(msg, vtimestamp));
     }
 
     while (queued_audio.length > opts.audio_queue_limit) {
-        const msg = queued_audio[0];
-        if (queued_audio.length === 1) {
+        const msg = queued_audio.shift();
+        if (queued_audio.length === opts.audio_queue_limit) {
             msg.new_cluster = true;
         }
         const atimestamp = get_audio_ts(msg);
-        send_msg(set_audio_ts(queued_audio.shift(), atimestamp));
+        send_msg(set_audio_ts(msg, atimestamp));
     }
 }
 
