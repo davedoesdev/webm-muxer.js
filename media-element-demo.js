@@ -1,3 +1,5 @@
+import { WebMWriter } from './webm-writer.js';
+
 // See https://www.webmproject.org/vp9/mp4/
 // and also https://googlechrome.github.io/samples/media/vp9-codec-string.html
 const vp9_params = {
@@ -10,29 +12,47 @@ const vp9c = Object.fromEntries(Object.entries(vp9_params).map(
     ([k, v]) => [k, v.toString().padStart(2, '0')]));
 const vp9_codec = `vp09.${vp9c.profile}.${vp9c.level}.${vp9c.bit_depth}.${vp9c.chroma_subsampling}`;
 
+const start_el = document.getElementById('start');
 const save_el = document.getElementById('save');
 const video_el = document.getElementById('video');
 const audio_el = document.getElementById('audio');
+const msg_el = document.getElementById('msg');
 
 let stopped = false;
 let video_loaded = false;
 let audio_loaded = false;
 
+function check_start() {
+    if (video_loaded && audio_loaded) {
+        start_el.addEventListener('click', start);
+        start_el.disabled = false;
+    }
+}
+
 video_el.addEventListener('loadeddata', function () {
     video_loaded = true;
-    if (audio_loaded) {
-        start();
-    }
+    check_start();
 });
 
 audio_el.addEventListener('loadeddata', function () {
     audio_loaded = true;
-    if (video_loaded) {
-        start();
-    }
+    check_start();
 });
 
-function start() {
+async function start() {
+    start_el.disabled = true;
+
+    const writer = new WebMWriter();
+    try {
+        await writer.start('muxed.webm');
+    } catch (ex) {
+        start_el.disabled = false;
+        throw ex;
+    }
+
+    video_el.style.display = 'initial';
+    audio_el.style.display = 'initial';
+
     const video_track = video_el.captureStream().getVideoTracks()[0];
     const video_readable = (new MediaStreamTrackProcessor(video_track)).readable;
 
@@ -47,7 +67,7 @@ function start() {
 
     let num_exits = 0;
 
-    function relay_data(ev) {
+    async function relay_data(ev) {
         const msg = ev.data;
         switch (msg.type) {
             case 'error':
@@ -75,8 +95,6 @@ function start() {
     audio_worker.onerror = onerror;
     audio_worker.onmessage = relay_data;
 
-    const chunks = [];
-
     const webm_worker = new Worker('./webm-worker.js');
     webm_worker.onerror = onerror;
     webm_worker.onmessage = async ev => {
@@ -90,37 +108,13 @@ function start() {
                 video_worker.terminate();
                 audio_worker.terminate();
 
-                const blob = new Blob(chunks, { type: 'video/webm' });
-
-                // From https://github.com/muaz-khan/RecordRTC/blob/master/RecordRTC.js#L1906
-                // EBML.js copyright goes to: https://github.com/legokichi/ts-ebml
-
-                const reader = new EBML.Reader();
-                const decoder = new EBML.Decoder();
-
-                const buf = await blob.arrayBuffer();
-                const elms = decoder.decode(buf);
-                for (let elm of elms) {
-                    reader.read(elm);
-                }
-                reader.stop();
-                console.log(`Duration: ${reader.duration}`);
-                const refinedMetadataBuf = EBML.tools.makeMetadataSeekable(reader.metadatas, reader.duration, reader.cues);
-                console.log(`Indexed ${blob.size} bytes`);
-
-                const body = buf.slice(reader.metadataSize);
-                const blob2 = new Blob([refinedMetadataBuf, body], {
-                    type: 'video/webm'
+                writer.addEventListener('progress', function (ev) {
+                    msg_el.innerText = `Fixing up ${this.name}: ${Math.round(ev.detail.written / ev.detail.total * 100)}%`;
                 });
 
-                const a = document.createElement('a');
-                const filename = 'muxed.webm';
-                a.textContent = filename;
-                a.href = URL.createObjectURL(blob2);
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                await writer.finish();
+
+                msg_el.innerText = `Finished ${writer.name}: Duration ${writer.duration}ms, Size ${writer.size} bytes`;
 
                 break;
 
@@ -152,7 +146,8 @@ function start() {
                 break;
 
             case 'muxed-data':
-                chunks.push(msg.data);
+                await writer.write(msg.data);
+                msg_el.innerText = `Written ${writer.size} bytes to ${writer.name}`;
                 break;
 
             case 'error':

@@ -5,8 +5,10 @@
         <script src="EBML.js"></script>
     </head>
     <body>
+        <input type="button" id="start" value="Start" disabled>
         <input type="button" id="save" value="Save" disabled>
-        <video id="video" width="100%" controls src="https://upload.wikimedia.org/wikipedia/commons/4/41/Big_Buck_Bunny_medium.ogv" poster="https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Big_Buck_Bunny_medium.ogv/800px--Big_Buck_Bunny_medium.ogv.jpg" muted loop crossOrigin="anonymous"></video>
-        <audio id="audio" src="https://upload.wikimedia.org/wikipedia/commons/8/87/120BPMclicktrack.ogg" controls loop crossOrigin="anonymous"></audio>
+        <span id="msg"></span>
+        <video id="video" style="max-width: 100%; max-height: 50%; display: none" controls src="https://upload.wikimedia.org/wikipedia/commons/4/41/Big_Buck_Bunny_medium.ogv" poster="https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Big_Buck_Bunny_medium.ogv/800px--Big_Buck_Bunny_medium.ogv.jpg" muted loop crossOrigin="anonymous"></video>
+        <audio id="audio" style="display: none" src="https://upload.wikimedia.org/wikipedia/commons/8/87/120BPMclicktrack.ogg" controls loop crossOrigin="anonymous"></audio>
     </body
 </html>
