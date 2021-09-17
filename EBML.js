@@ -940,7 +940,7 @@ exports.createRIFFChunk = createRIFFChunk;
  * @param duration - Duration (TimecodeScale)
  * @param cues - cue points for clusters
  */
-function makeMetadataSeekable(originalMetadata, duration, cuesInfo) {
+function makeMetadataSeekable(originalMetadata, duration, cuesInfo, cuesStart) {
     // extract the header, we can reuse this as-is
     var header = extractElement("EBML", originalMetadata);
     var headerSize = encodedSizeOfEbml(header);
@@ -968,7 +968,7 @@ function makeMetadataSeekable(originalMetadata, duration, cuesInfo) {
     //printElementIds(tracks);  
     var seekHeadSize = 47; // Initial best guess, but could be slightly larger if the Cues element is huge.
     var seekHead = [];
-    var cuesSize = 5 + cuesInfo.length * 15; // very rough initial approximation, depends a lot on file size and number of CuePoints                   
+    //var cuesSize = 5 + cuesInfo.length * 15; // very rough initial approximation, depends a lot on file size and number of CuePoints                   
     var cues = [];
     var lastSizeDifference = -1; // 
     // The size of SeekHead and Cues elements depends on how many bytes the offsets values can be encoded in.
@@ -979,8 +979,9 @@ function makeMetadataSeekable(originalMetadata, duration, cuesInfo) {
         // SeekHead starts at 0
         var infoStart = seekHeadSize; // Info comes directly after SeekHead
         var tracksStart = infoStart + infoSize; // Tracks comes directly after Info
-        var cuesStart = tracksStart + tracksSize; // Cues starts directly after 
-        var newMetadataSize = cuesStart + cuesSize; // total size of metadata  
+        //var cuesStart = tracksStart + tracksSize; // Cues starts directly after 
+        //var newMetadataSize = cuesStart + cuesSize; // total size of metadata  
+        var newMetadataSize = tracksStart + tracksSize;
         // This is the offset all CueClusterPositions should be adjusted by due to the metadata size changing.
         var sizeDifference = newMetadataSize - originalMetadataSize;
         // console.error(`infoStart: ${infoStart}, infoSize: ${infoSize}`);
@@ -1019,13 +1020,13 @@ function makeMetadataSeekable(originalMetadata, duration, cuesInfo) {
             // EBMLReader returns CueClusterPosition with absolute byte offsets. The Cues section expects them as offsets from the first level 1 element of the Segment, so we need to adjust it.
             CueClusterPosition -= segmentContentStartPos;
             // We also need to adjust to take into account the change in metadata size from when EBMLReader read the original metadata.
-            CueClusterPosition += sizeDifference;
+            //CueClusterPosition += sizeDifference;
             cues.push({ name: "CueClusterPosition", type: "u", data: createUIntBuffer(CueClusterPosition) });
             cues.push({ name: "CueTrackPositions", type: "m", isEnd: true });
             cues.push({ name: "CuePoint", type: "m", isEnd: true });
         });
         cues.push({ name: "Cues", type: "m", isEnd: true });
-        cuesSize = encodedSizeOfEbml(cues);
+        //cuesSize = encodedSizeOfEbml(cues);
         //console.error("Cues size: " + cuesSize);   
         //console.error("Cue count: " + cuesInfo.length);
         //printElementIds(cues);      
@@ -1051,13 +1052,13 @@ function makeMetadataSeekable(originalMetadata, duration, cuesInfo) {
         seekHead,
         info,
         tracks,
-        cues
+        //cues
     ]);
     var result = new EBMLEncoder_1.default().encode(finalMetadata);
     //printElementIds(finalMetadata);
     //console.error(`Final metadata buffer size: ${result.byteLength}`);
     //console.error(`Final metadata buffer size without header and segment: ${result.byteLength-segmentContentStartPos}`);
-    return result;
+    return [result, new EBMLEncoder_1.default().encode(cues)];
 }
 exports.makeMetadataSeekable = makeMetadataSeekable;
 /**

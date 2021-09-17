@@ -108,10 +108,6 @@ async function start() {
                 video_worker.terminate();
                 audio_worker.terminate();
 
-                writer.addEventListener('progress', function (ev) {
-                    msg_el.innerText = `Fixing up ${this.name}: ${Math.round(ev.detail.written / ev.detail.total * 100)}%`;
-                });
-
                 await writer.finish();
 
                 msg_el.innerText = `Finished ${writer.name}: Duration ${writer.duration}ms, Size ${writer.size} bytes`;

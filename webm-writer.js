@@ -2,7 +2,15 @@
 // Requires https://github.com/muaz-khan/RecordRTC/blob/master/libs/EBML.js
 // EBML.js copyright goes to: https://github.com/legokichi/ts-ebml
 
-export class WebMWriter extends EventTarget {
+export class WebMWriter {
+    constructor(options) {
+        this.options = {
+            // Metadata length without cues is about 281 bytes, we'll leave more
+            metadata_reserve_size: 1024,
+            ...options
+        };
+    }
+
     async start(suggestedName) {
         this.handle = await window.showSaveFilePicker({
             suggestedName,
@@ -16,7 +24,8 @@ export class WebMWriter extends EventTarget {
 
         this.name = this.handle.name;
         this.writable = await this.handle.createWritable();
-        this.size = 0;
+        await this.writable.write(new ArrayBuffer(this.options.metadata_reserve_size));
+        this.size = this.options.metadata_reserve_size;
 
         this.reader = new EBML.Reader();
         this.decoder = new EBML.Decoder();
@@ -33,49 +42,47 @@ export class WebMWriter extends EventTarget {
     }
 
     async finish() {
-        await this.writable.close();
-
         this.reader.stop();
         this.duration = this.reader.duration;
-        const refinedMetadataBuf = EBML.tools.makeMetadataSeekable(
-                this.reader.metadatas, this.reader.duration, this.reader.cues);
+        const [refinedMetadataBuf, cues] = EBML.tools.makeMetadataSeekable(
+                this.reader.metadatas, this.reader.duration, this.reader.cues, this.size);
 
-        const reader = (await this.handle.getFile()).stream().getReader();
+        await this.writable.write(cues);
+        this.size += cues.byteLength;
 
-        try {
-            this.writable = await this.handle.createWritable();
-            await this.writable.write(refinedMetadataBuf);
+        await this.writable.seek(0);
+        await this.writable.write(refinedMetadataBuf);
 
-            let to_skip = reader.metadataSize;
-            let written = refinedMetadataBuf.byteLength;
-            const total = this.size - reader.metadataSize + refinedMetadataBuf.byteLength;
+        const void_size = this.options.metadata_reserve_size + this.reader.metadataSize - refinedMetadataBuf.byteLength;
 
-            while (true) {
-                this.dispatchEvent(new CustomEvent('progress', {
-                    detail: {
-                        written,
-                        total
-                    }
-                }));
+        await this.writable.write(new EBML.Encoder().encode([{
+            name: 'Void',
+            type: 'b',
+            data: EBML.tools.Buffer.alloc(
+                void_size
+                // Subtract 1 for Void ID (0xEC)
+                //   VINT_MARKER (first bit set) is at position 0 so length 1 byte
+                - 1
+                // If void_size is < 128 then it can be held in a single byte VINT
+                // Otherwise it can be held in two bytes with VINT_MARKER as the first bit.
+                // The remaining 15 bits can represent up to 32767, which is more than
+                // enough because our reserved size is 1024.
+                - (void_size < 128 ? 1 : 2))
+        }]));
 
-                let { value, done } = await reader.read();
-                if (done) {
-                    break;
-                }
-                if (to_skip > 0) {
-                    const skip = Math.min(to_skip, value.length);
-                    value = value.subarray(skip);
-                    to_skip -= skip;
-                }
-                await this.writable.write(value);
-                written += value.byteLength;
-            }
+        await this.writable.close();
 
-            await this.writable.close();
-            this.size = written;
-        } finally {
-            await reader.cancel();
-        }
+//TODO
+//throw error in finish if there's not enough space
+//we could also put the cues in there if there's enough space
+//i.e. we could try first and if the size is too big then put them at the end
+
+
+        // we should also detect if the refinedMetadataBuf is longer than we have space for
+        // (including if we don't have enough space for a Void element)
+        // and use the existing technique if so
+
+
     }
 
     async cancel() {
