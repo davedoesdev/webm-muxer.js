@@ -108,9 +108,9 @@ async function start() {
                 video_worker.terminate();
                 audio_worker.terminate();
 
-                await writer.finish();
+                const cues_at_start = await writer.finish();
 
-                msg_el.innerText = `Finished ${writer.name}: Duration ${writer.duration}ms, Size ${writer.size} bytes`;
+                msg_el.innerText = `Finished ${writer.name}: Duration ${writer.duration}ms, Size ${writer.size} bytes, Cues at ${cues_at_start ? 'start' : 'end'}`;
 
                 break;
 
