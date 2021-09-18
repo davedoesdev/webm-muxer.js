@@ -2,6 +2,8 @@ import {
     max_video_config,
 } from './resolution.js';
 
+import { WebMWriter } from './webm-writer.js';
+
 function onerror(e) {
     console.error(e);
 }
@@ -45,13 +47,20 @@ start_el.addEventListener('click', async function () {
     record_el.disabled = true;
     pcm_el.disabled = true;
 
+    let writer;
+    const rec_info = document.getElementById('rec_info');
+    if (record_el.checked) {
+        rec_info.innerText = 'Recording';
+        writer = new WebMWriter();
+        await writer.start('camera.webm');
+    } else {
+        rec_info.innerText =  '';
+    }
+
     const buf_info = document.getElementById('buf_info');
     if (!pcm_el.checked) {
         buf_info.innerText = 'Buffering';
     }
-
-    const rec_info = document.getElementById('rec_info');
-    rec_info.innerText = record_el.checked ? 'Recording' : '';
 
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -124,8 +133,6 @@ start_el.addEventListener('click', async function () {
     let exited = false;
     let buffer;
     const queue = [];
-    const chunks = [];
-    let rec_size = 0;
     const key_frame_interval = 1;
     const buffer_delay = 2;
 
@@ -143,52 +150,14 @@ start_el.addEventListener('click', async function () {
                 audio_worker.terminate();
                 exited = true;
 
-                function enable_inputs() {
-                    start_el.disabled = false;
-                    record_el.disabled = false;
-                    pcm_el.disabled = !record_el.checked;
-                }
-
                 if (record_el.checked) {
-                    rec_info.innerText = `Indexing ${rec_size} bytes`;
-                    setTimeout(async function () {
-                        const blob = new Blob(chunks, { type: 'video/webm' });
-
-                        // From https://github.com/muaz-khan/RecordRTC/blob/master/RecordRTC.js#L1906
-                        // EBML.js copyright goes to: https://github.com/legokichi/ts-ebml
-
-                        const reader = new EBML.Reader();
-                        const decoder = new EBML.Decoder();
-
-                        const buf = await blob.arrayBuffer();
-                        const elms = decoder.decode(buf);
-                        for (let elm of elms) {
-                            reader.read(elm);
-                        }
-                        reader.stop();
-                        console.log(`duration: ${reader.duration}`);
-                        const refinedMetadataBuf = EBML.tools.makeMetadataSeekable(reader.metadatas, reader.duration, reader.cues);
-                        rec_info.innerText = `Indexed ${rec_size} bytes`;
-
-                        const body = buf.slice(reader.metadataSize);
-                        const blob2 = new Blob([refinedMetadataBuf, body], {
-                            type: 'video/webm'
-                        });
-
-                        const a = document.createElement('a');
-                        const filename = 'camera.webm';
-                        a.textContent = filename;
-                        a.href = URL.createObjectURL(blob2);
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-
-                        enable_inputs();
-                    }, 0);
-                } else {
-                    enable_inputs();
+                    const cues_at_start = await writer.finish();
+                    rec_info.innerText = `Finished ${writer.name}: Duration ${writer.duration}ms, Size ${writer.size} bytes, Cues at ${cues_at_start ? 'start' : 'end'}`;
                 }
+
+                start_el.disabled = false;
+                record_el.disabled = false;
+                pcm_el.disabled = !record_el.checked;
 
                 break;
 
@@ -218,9 +187,8 @@ start_el.addEventListener('click', async function () {
 
             case 'muxed-data':
                 if (record_el.checked) {
-                    chunks.push(msg.data);
-                    rec_size += msg.data.byteLength;
-                    rec_info.innerText = `Recorded ${rec_size} bytes`;
+                    await writer.write(msg.data);
+                    rec_info.innerText = `Recorded ${writer.size} bytes`;
                 }
                 queue.push(msg.data);
                 if (!pcm_el.checked) {
