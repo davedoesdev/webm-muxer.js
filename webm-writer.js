@@ -44,45 +44,54 @@ export class WebMWriter {
     async finish() {
         this.reader.stop();
         this.duration = this.reader.duration;
-        const [refinedMetadataBuf, cues] = EBML.tools.makeMetadataSeekable(
-                this.reader.metadatas, this.reader.duration, this.reader.cues, this.size);
 
-        await this.writable.write(cues);
-        this.size += cues.byteLength;
+        const space = this.options.metadata_reserve_size + this.reader.metadataSize;
 
-        await this.writable.seek(0);
-        await this.writable.write(refinedMetadataBuf);
+        const has_space = () => {
+            return refinedMetadataBuf.byteLength === space ||
+                   refinedMetadataBuf.byteLength <= space - 2; // min Void size is 2
+        };
 
-        const void_size = this.options.metadata_reserve_size + this.reader.metadataSize - refinedMetadataBuf.byteLength;
+        const write_metadata = async () => {
+            await this.writable.seek(0);
+            await this.writable.write(refinedMetadataBuf);
 
-        await this.writable.write(new EBML.Encoder().encode([{
-            name: 'Void',
-            type: 'b',
-            data: EBML.tools.Buffer.alloc(
-                void_size
-                // Subtract 1 for Void ID (0xEC)
-                //   VINT_MARKER (first bit set) is at position 0 so length 1 byte
-                - 1
-                // If void_size is < 128 then it can be held in a single byte VINT
-                // Otherwise it can be held in two bytes with VINT_MARKER as the first bit.
-                // The remaining 15 bits can represent up to 32767, which is more than
-                // enough because our reserved size is 1024.
-                - (void_size < 128 ? 1 : 2))
-        }]));
+            let void_size = space - refinedMetadataBuf.byteLength;
+            if (void_size >= 2) {
+                await this.writable.write(new EBML.Encoder().getSchemaInfo('Void'));
+                void_size -= 2; // one for element ID (above), one for VINT_WIDTH
+                if (void_size < 4) {
+                    await this.writable.write(Uint8Array.from([void_size & 0x80]));
+                } else {
+                    const buf = new ArrayBuffer(5);
+                    const view = new DataView(buf);
+                    view.setUint8(0, 0b00001000);
+                    view.setUint32(1, void_size - 4);
+                    await this.writable.write(buf);
+                }
+            }
 
-        await this.writable.close();
+            await this.writable.close();
+        };
 
-//TODO
-//throw error in finish if there's not enough space
-//we could also put the cues in there if there's enough space
-//i.e. we could try first and if the size is too big then put them at the end
+        let refinedMetadataBuf = EBML.tools.makeMetadataSeekable(
+                this.reader.metadatas, this.reader.duration, this.reader.cues, this.options.metadata_reserve_size);
+        if (has_space()) {
+            await write_metadata();
+            return true;
+        }
 
+        let cues;
+        ([refinedMetadataBuf, cues] = EBML.tools.makeMetadataSeekable(
+                this.reader.metadatas, this.reader.duration, this.reader.cues, this.options.metadata_reserve_size, this.size));
+        if (has_space()) {
+            await this.writable.write(cues);
+            this.size += cues.byteLength;
+            await write_metadata();
+            return false;
+        }
 
-        // we should also detect if the refinedMetadataBuf is longer than we have space for
-        // (including if we don't have enough space for a Void element)
-        // and use the existing technique if so
-
-
+        throw new Error('no space for metadata');
     }
 
     async cancel() {
