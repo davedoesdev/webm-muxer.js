@@ -50,9 +50,16 @@ start_el.addEventListener('click', async function () {
     let writer;
     const rec_info = document.getElementById('rec_info');
     if (record_el.checked) {
-        rec_info.innerText = 'Recording';
         writer = new WebMWriter();
-        await writer.start('camera.webm');
+        try {
+            await writer.start('camera.webm');
+        } catch (ex) {
+            this.disabled = false;
+            record_el.disabled = false;
+            pcm_el.disabled = false;
+            throw ex;
+        }
+        rec_info.innerText = 'Recording';
     } else {
         rec_info.innerText =  '';
     }
