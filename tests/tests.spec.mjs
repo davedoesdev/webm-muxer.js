@@ -40,6 +40,40 @@ test('muxes camera and microphone into WebM format that can be played in browser
     await page.waitForFunction(() => document.getElementById('video').paused);
 });
 
+// We need to monkey patch window.showSaveFilePicker because of:
+// https://github.com/microsoft/playwright/issues/8850
+function polyfillShowSaveFilePicker() {
+    window.showSaveFilePicker = async ({ suggestedName }) => { 
+        return {
+            name: suggestedName,
+            createWritable() {
+                const data = [];
+                let curpos = 0;
+                return {
+                    async write(buf) {
+                        for (let b of new Uint8Array(buf)) {
+                            data[curpos++] = b;
+                        }
+                    },
+
+                    async seek(pos) {
+                        curpos = pos;
+                    },
+
+                    async close() {
+                        const a = document.createElement('a');
+                        a.textContent = suggestedName;
+                        a.href = URL.createObjectURL(new Blob([Uint8Array.from(data)], { type: 'video/webm' }));
+                        a.download = suggestedName;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                };
+            }
+        }
+    };
+}
 
 for (let pcm of [false, true]) {
     test(`records to a vaild WebM file (pcm=${pcm})`, async ({ page }) => {
@@ -49,6 +83,7 @@ for (let pcm of [false, true]) {
         if (pcm) {
             await page.click('#pcm');
         }
+        await page.evaluate(polyfillShowSaveFilePicker);
         await page.click('#start');
         let width, height;
         if (pcm) {
