@@ -210,6 +210,17 @@ start_el.addEventListener('click', async function () {
     };
 
     function remove_append() {
+        if (exited) {
+            buffer.removeEventListener('updateend', remove_append);
+            buf_info.innerText = '';
+            source.endOfStream();
+            video.pause();
+            video.removeAttribute('src');
+            video.currentTime = 0;
+            video.poster = poster;
+            video.load();
+            return;
+        }
         if (buffer.updating) {
             return;
         }
@@ -217,8 +228,7 @@ start_el.addEventListener('click', async function () {
         if (range.length > 0) {
             buf_info.innerText = `Buffered ${range.start(0)} .. ${range.end(0)}`;
         }
-        if (!exited &&
-            (video.currentTime === 0) &&
+        if ((video.currentTime === 0) &&
             ((buffer_delay === 0) ||
              ((range.length > 0) && (range.end(0) > buffer_delay)))) {
             video.poster = '';
@@ -229,14 +239,6 @@ start_el.addEventListener('click', async function () {
             buffer.remove(0, check);
         } else if (queue.length > 0) {
             buffer.appendBuffer(queue.shift());
-        } else if (exited) {
-            buf_info.innerText = '';
-            source.endOfStream();
-            video.pause();
-            video.removeAttribute('src');
-            video.currentTime = 0;
-            video.poster = poster;
-            video.load();
         }
     }
 
