@@ -968,7 +968,7 @@ function makeMetadataSeekable(originalMetadata, duration, cuesInfo, cuesOffset, 
     //printElementIds(tracks);  
     var seekHeadSize = 47; // Initial best guess, but could be slightly larger if the Cues element is huge.
     var seekHead = [];
-    var cuesSize = 5 + cuesInfo.length * 15; // very rough initial approximation, depends a lot on file size and number of CuePoints
+    var cuesSize = 5 + cuesInfo.length * 15; // very rough initial approximation, depends a lot on file size and number of CuePoints                   
     var cues = [];
     var lastSizeDifference = -1; // 
     // The size of SeekHead and Cues elements depends on how many bytes the offsets values can be encoded in.
@@ -984,8 +984,8 @@ function makeMetadataSeekable(originalMetadata, duration, cuesInfo, cuesOffset, 
             cuesStart = cuesPosition - segmentContentStartPos;
             newMetadataSize = tracksStart + tracksSize;
         } else {
-            cuesStart = tracksStart + tracksSize;
-            newMetadataSize = cuesStart + cuesSize;
+            cuesStart = tracksStart + tracksSize; // Cues starts directly after
+            newMetadataSize = cuesStart + cuesSize; // total size of metadata
         }
         // This is the offset all CueClusterPositions should be adjusted by due to the metadata size changing.
         var sizeDifference = newMetadataSize - originalMetadataSize;
@@ -1024,7 +1024,12 @@ function makeMetadataSeekable(originalMetadata, duration, cuesInfo, cuesOffset, 
             //console.error(`CueClusterPosition: ${CueClusterPosition}, Corrected to: ${CueClusterPosition - segmentContentStartPos}  , offset by ${sizeDifference} to become ${(CueClusterPosition - segmentContentStartPos) + sizeDifference - segmentContentStartPos}`);
             // EBMLReader returns CueClusterPosition with absolute byte offsets. The Cues section expects them as offsets from the first level 1 element of the Segment, so we need to adjust it.
             CueClusterPosition -= segmentContentStartPos;
-            CueClusterPosition += cuesOffset;
+            if (cuesOffset) {
+                CueClusterPosition += cuesOffset;
+            } else {
+                // We also need to adjust to take into account the change in metadata size from when EBMLReader read the original metadata.
+                CueClusterPosition += sizeDifference;
+            }
             cues.push({ name: "CueClusterPosition", type: "u", data: createUIntBuffer(CueClusterPosition) });
             cues.push({ name: "CueTrackPositions", type: "m", isEnd: true });
             cues.push({ name: "CuePoint", type: "m", isEnd: true });

@@ -12,8 +12,6 @@ export class WebMWriter {
     }
 
     async start(suggestedName) {
-        const reserve = new ArrayBuffer(this.options.metadata_reserve_size);
-
         if (suggestedName) {
             this.handle = await window.showSaveFilePicker({
                 suggestedName,
@@ -26,12 +24,12 @@ export class WebMWriter {
             });
             this.name = this.handle.name;
             this.writable = await this.handle.createWritable();
-            await this.writable.write(reserve);
+            await this.writable.write(new ArrayBuffer(this.options.metadata_reserve_size));
+            this.size = this.options.metadata_reserve_size;
         } else {
-            this.chunks = [reserve];
+            this.chunks = [];
+            this.size = 0;
         }
-
-        this.size = this.options.metadata_reserve_size;
 
         this.reader = new EBML.Reader();
         this.decoder = new EBML.Decoder();
@@ -55,6 +53,26 @@ export class WebMWriter {
         this.reader.stop();
         this.duration = this.reader.duration;
 
+        if (!this.writable) {
+            let refinedMetadataBuf = EBML.tools.makeMetadataSeekable(
+                this.reader.metadatas, this.reader.duration, this.reader.cues);
+
+            let to_skip = this.reader.metadataSize;
+            while (to_skip >= this.chunks[0].byteLength) {
+                to_skip -= this.chunks[0].byteLength;
+                this.chunks.shift();
+            }
+            if (to_skip > 0) {
+                this.chunks[0] = Uint8Array.from(this.chunks[0]).subarray(to_skip);
+            }
+            this.size -= this.reader.metadataSize;
+
+            this.chunks.unshift(refinedMetadataBuf);
+            this.size += refinedMetadataBuf.byteLength;
+
+            return this.chunks;
+        }
+
         const space = this.options.metadata_reserve_size + this.reader.metadataSize;
 
         const has_space = () => {
@@ -63,64 +81,42 @@ export class WebMWriter {
         };
 
         const write_metadata = async () => {
-            const void_chunks = [];
+            await this.writable.seek(0);
+            await this.writable.write(refinedMetadataBuf);
+
             let void_size = space - refinedMetadataBuf.byteLength;
             if (void_size >= 2) {
-                void_chunks.push(new EBML.Encoder().getSchemaInfo('Void'));
+                await this.writable.write(new EBML.Encoder().getSchemaInfo('Void'));
                 void_size -= 2; // one for element ID (above), one for VINT_WIDTH
                 if (void_size < 4) {
-                    void_chunks.push(Uint8Array.from([void_size & 0x80]));
+                    await this.writable.write(Uint8Array.from([void_size & 0x80]));
                 } else {
                     const buf = new ArrayBuffer(5);
                     const view = new DataView(buf);
                     view.setUint8(0, 0b00001000);
                     view.setUint32(1, void_size - 4);
-                    void_chunks.push(buf);
+                    await this.writable.write(buf);
                 }
             }
 
-            if (this.writable) {
-                await this.writable.seek(0);
-                await this.writable.write(refinedMetadataBuf);
-                for (let chunk of void_chunks) {
-                    await this.writable.write(chunk);
-                }
-                await this.writable.close();
-            } else {
-                let to_skip = space;
-                while (to_skip >= this.chunks[0].byteLength) {
-                    to_skip -= this.chunks[0].byteLength;
-                    this.chunks.shift();
-                }
-                if (to_skip > 0) {
-                    this.chunks[0] = Uint8Array.from(this.chunks[0]).subarray(to_skip);
-                }
-                for (let i = void_chunks.length - 1; i >= 0; --i) {
-                    this.chunks.unshift(void_chunks[i]);
-                }
-                this.chunks.unshift(refinedMetadataBuf);
-            }
+            await this.writable.close();
         };
 
         let refinedMetadataBuf = EBML.tools.makeMetadataSeekable(
                 this.reader.metadatas, this.reader.duration, this.reader.cues, this.options.metadata_reserve_size);
         if (has_space()) {
             await write_metadata();
-            return this.writable ? true : this.chunks;
+            return true;
         }
 
         let cues;
         ([refinedMetadataBuf, cues] = EBML.tools.makeMetadataSeekable(
                 this.reader.metadatas, this.reader.duration, this.reader.cues, this.options.metadata_reserve_size, this.size));
         if (has_space()) {
-            if (this.writable) {
-                await this.writable.write(cues);
-            } else {
-                this.chunks.push(cues);
-            }
+            await this.writable.write(cues);
             this.size += cues.byteLength;
             await write_metadata();
-            return this.writable ? false : this.chunks;
+            return false;
         }
 
         throw new Error('no space for metadata');

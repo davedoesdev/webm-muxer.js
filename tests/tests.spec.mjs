@@ -43,7 +43,7 @@ test('muxes camera and microphone into WebM format that can be played in browser
 // We need to monkey patch window.showSaveFilePicker because of:
 // https://github.com/microsoft/playwright/issues/8850
 function polyfillShowSaveFilePicker() {
-    window.showSaveFilePicker = async ({ suggestedName }) => { 
+    window.showSaveFilePicker = async ({ suggestedName }) => {
         return {
             name: suggestedName,
             createWritable() {

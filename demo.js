@@ -12,6 +12,7 @@ const start_el = document.getElementById('start');
 const stop_el = document.getElementById('stop');
 const record_el = document.getElementById('record');
 const pcm_el = document.getElementById('pcm');
+const inmem_el = document.getElementById('in-memory');
 let video_track, audio_track;
 
 const video = document.getElementById('video');
@@ -22,13 +23,19 @@ record_el.addEventListener('input', function () {
     if (this.checked) {
         pcm_el.disabled = false;
         pcm_el.checked = pcm_el.was_checked;
+        inmem_el.disabled = false;
+        inmem_el.checked = inmem_el.was_checked;
     } else {
         pcm_el.disabled = true;
         pcm_el.was_checked = pcm_el.checked;
         pcm_el.checked = false;
+        inmem_el.disabled = true;
+        inmem_el.was_checked = inmem_el.checked;
+        inmem_el.checked = false;
     }
 });
 pcm_el.disabled = true;
+inmem_el.disabled = true;
 
 // See https://www.webmproject.org/vp9/mp4/
 // and also https://googlechrome.github.io/samples/media/vp9-codec-string.html
@@ -46,17 +53,19 @@ start_el.addEventListener('click', async function () {
     this.disabled = true;
     record_el.disabled = true;
     pcm_el.disabled = true;
+    inmem_el.disabled = true;
 
     let writer;
     const rec_info = document.getElementById('rec_info');
     if (record_el.checked) {
         writer = new WebMWriter();
         try {
-            await writer.start('camera.webm');
+            await writer.start(inmem_el.checked ? null : 'camera.webm');
         } catch (ex) {
             this.disabled = false;
             record_el.disabled = false;
-            pcm_el.disabled = false;
+            pcm_el.disabled = !record_el.checked;
+            inmem_el.disabled = !record_el.checked;
             throw ex;
         }
         rec_info.innerText = 'Recording';
@@ -158,13 +167,27 @@ start_el.addEventListener('click', async function () {
                 exited = true;
 
                 if (record_el.checked) {
-                    const cues_at_start = await writer.finish();
-                    rec_info.innerText = `Finished ${writer.name}: Duration ${writer.duration}ms, Size ${writer.size} bytes, Cues at ${cues_at_start ? 'start' : 'end'}`;
+                    const r = await writer.finish();
+                    rec_info.innerText = `Finished ${writer.name}: Duration ${writer.duration}ms, Size ${writer.size} bytes`;
+                    if (inmem_el.checked) {
+                        const blob = new Blob(r, { type: 'video/webm' });
+                        const a = document.createElement('a');
+                        const filename = 'camera.webm';
+                        a.textContent = filename;
+                        a.href = URL.createObjectURL(blob);
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    } else {
+                        rec_info.innerText += `, Cues at ${r ? 'start' : 'end'}`;
+                    }
                 }
 
                 start_el.disabled = false;
                 record_el.disabled = false;
                 pcm_el.disabled = !record_el.checked;
+                inmem_el.disabled = !record_el.checked;
 
                 break;
 
@@ -210,18 +233,20 @@ start_el.addEventListener('click', async function () {
     };
 
     function remove_append() {
-        if (exited) {
-            buffer.removeEventListener('updateend', remove_append);
-            buf_info.innerText = '';
-            source.endOfStream();
-            video.pause();
-            video.removeAttribute('src');
-            video.currentTime = 0;
-            video.poster = poster;
-            video.load();
+        if (buffer.updating) {
             return;
         }
-        if (buffer.updating) {
+        if (exited) {
+            if (video.src) {
+                buffer.removeEventListener('updateend', remove_append);
+                buf_info.innerText = '';
+                source.endOfStream();
+                video.pause();
+                video.removeAttribute('src');
+                video.currentTime = 0;
+                video.poster = poster;
+                video.load();
+            }
             return;
         }
         const range = buffer.buffered;
