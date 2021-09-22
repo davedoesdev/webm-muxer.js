@@ -12,7 +12,7 @@ https://emscripten.org/[Emscripten].
 
 == Requirements
 
-webm-muxer.js works on Chrome 93. The WebCodecs spec changes frequently so changes may
+webm-muxer.js works on Chrome 95. The WebCodecs spec changes frequently so changes may
 be required to maintain support going forward.
 
 == Licence
@@ -22,7 +22,7 @@ webm-muxer.js is licensed under the terms of the link:LICENCE[MIT licence].
 == Demo
 
 You can see a demo https://rawgit-now.netlify.app/davedoesdev/webm-muxer.js/main/demo.html[here]
-(tested on Chrome 94 Linux with `#enable-experimental-web-platform-features`).
+(tested on Chrome 95 Linux with `#enable-experimental-web-platform-features`).
 The source code for the demo is available in link:demo.html[] and link:demo.js[].
 
 When you click the *Start* button, you'll be asked by the browser to give permission to capture
@@ -41,9 +41,11 @@ once they've processed the last of the data.
 This all happens in near realtime &mdash; the data is effectively pipelined between the workers
 and you don't have to wait until you press **Stop** to see the output.
 
-You also have the option to record the WebM file and download it to your local disk.
-If you check **Record** before clicking **Start**, the data will be buffered in memory
-and then saved to `camera.webm` once you click **Stop**.
+You also have the option to record the WebM file to your local disk.
+If you check **Record** before clicking **Start**, you'll be prompted for a file to save
+the data into (default `camera.webm`). The data is written to disk as it is produced and
+then renamed to the file you chose once you click **Stop**. If you check **In-memory** too,
+the data will instead be buffered in memory first and then saved to `camera.webm` once you click **Stop**.
 
 Finally, when you record, you can check **PCM** to have the raw audio data from your microphone
 passed into the WebM muxer rather than encoding it to Opus. This option is only available when recording
@@ -173,6 +175,50 @@ Per above, your application will receive chunked WebM output in multiple `type: 
 These are suitable for live streaming but if you concatenate them, for example to record them to a file, please be aware that the result
 will not be seekable.
 
-You can use link:EBML.js[] to make the concatenated WebM data seeekable. See link:demo.js#L94[the demo] for an example of how to do this. `EBML.js` was generated
-by https://github.com/muaz-khan/RecordRTC/blob/master/libs/EBML.js[RecordRTC] from its original source at
-https://github.com/legokichi/ts-ebml[ts-ebml].
+You can use link:webm-writer.js[] to make the WebM data seekable. It exports a class, `WebMWriter`,
+which uses one of two methods to index muxed data:
+
+Index as it goes:: Writes the data to disk as it's produced, using the
+https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API[File System Access API].
+Once the data stops, appends the cues, seeks back to the start of the file and rewrites the header.
+To use this method:
+
+. Construct a `WebMWriter` object. The constructor takes an optional options object with a single property,
+`metadata_reserve_size`. This is the number of extra bytes to leave at the start of the file for the header
+so it can be fixed up after writing stops. The default is 1024, which is enough to rewrite the header.
+`WebMWriter` will try to put the cues into this space too if they're small enough, otherwise they're appended
+to the end of the file, after the track data. You can increase `metadata_reserve_size` to leave more space
+for the cues at the start of the file, but remember the longer the recording, the larger the cues section will be.
+
+. Call the async `start` method. You must pass a filename argument to this function, otherwise the data is buffered in memory
+(see below). The user is prompted to for the file to save the data into -- the argument passed to `start` is used as
+the suggested name in the file picker.
+
+. Call the async `write` method for each `type: "muxed-data"` message, passing it the `data` property of the message.
+
+. Call the async `finish` method. Once this returns (after awaiting), the seekable WebM file will be ready in the
+file the user chose. Note the `name` property of the `WebMWriter` object will contain the filename (but not the path).
+`finish` returns `true` if the cues were inserted at the start of the file or `false` if they were appended at the end.
+
+Buffer in memory:: Buffers the data in memory and then rewrites the header and cues. The cues are always inserted
+at the start, before the track data. To use this method:
+
+. Construct a `WebMWriter` object.
+
+. Call the async `start` method.
+
+. Call the async `write` method for each `type: "muxed-data"` message, passing it the `data` property of the message.
+
+. Call the async `finish` method. This returns (after awaiting) an array of
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer[`ArrayBuffer`]s or
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray[typed arrays] containing
+the seekable WebM recording split into contiguous chunks.
+
+After `finish` returns in both methods, the `size` property of the `WebMWriter` object will contain the size of the file
+in bytes and the `duration` property will contain the length of the recording in milliseconds. 
+
+See link:demo.js[the demo] for an example of how to use `WebMWriter`.
+
+`WebMWriter` uses link:EBML.js[] to do the heavy lifting. `EBML.js` is a slightly modified version of the version made
+by https://github.com/muaz-khan/RecordRTC/blob/master/libs/EBML.js[RecordRTC], which in turn was generated from its
+original source at https://github.com/legokichi/ts-ebml[ts-ebml].
