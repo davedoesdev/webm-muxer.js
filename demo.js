@@ -168,7 +168,7 @@ start_el.addEventListener('click', async function () {
 
                 if (record_el.checked) {
                     const r = await writer.finish();
-                    rec_info.innerText = `Finished ${writer.name}: Duration ${writer.duration}ms, Size ${writer.size} bytes`;
+                    rec_info.innerText = `Finished: Duration ${writer.duration}ms, Size ${writer.size} bytes`;
                     if (inmem_el.checked) {
                         const blob = new Blob(r, { type: 'video/webm' });
                         const a = document.createElement('a');
@@ -180,7 +180,7 @@ start_el.addEventListener('click', async function () {
                         a.click();
                         document.body.removeChild(a);
                     } else {
-                        rec_info.innerText += `, Cues at ${r ? 'start' : 'end'}`;
+                        rec_info.innerText += `, Filename ${writer.name}, Cues at ${r ? 'start' : 'end'}`;
                     }
                 }
 
