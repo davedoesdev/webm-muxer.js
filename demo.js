@@ -267,13 +267,7 @@ start_el.addEventListener('click', async function () {
         }
     }
 
-    const source = new MediaSource();
-    video.src = URL.createObjectURL(source);
-
-    source.addEventListener('sourceopen', function () {
-        buffer = this.addSourceBuffer('video/webm; codecs=vp9,opus');
-        buffer.addEventListener('updateend', remove_append);
-
+    function start() {
         webm_worker.postMessage({
             type: 'start',
             //webm_receiver: './test-receiver.js',
@@ -295,6 +289,19 @@ start_el.addEventListener('click', async function () {
                 }
             }
         });
+    }
+
+    if (pcm_el.checked) {
+        return start();
+    }
+
+    const source = new MediaSource();
+    video.src = URL.createObjectURL(source);
+
+    source.addEventListener('sourceopen', function () {
+        buffer = this.addSourceBuffer('video/webm; codecs=vp9,opus');
+        buffer.addEventListener('updateend', remove_append);
+        start();
     });
 });
 
