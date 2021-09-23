@@ -198,7 +198,9 @@ the suggested name in the file picker.
 
 . Call the async `finish` method. Once this returns (after awaiting), the seekable WebM file will be ready in the
 file the user chose. Note the `name` property of the `WebMWriter` object will contain the filename (but not the path).
-`finish` returns `true` if the cues were inserted at the start of the file or `false` if they were appended at the end.
+The `handle` property will contain the https://developer.mozilla.org/en-US/docs/Web/API/FileSystemFileHandle[`FileSystemFileHandle`]
+to the file. You can use this to read it back in again if you need to. `finish` returns `true` if the cues were
+inserted at the start of the file or `false` if they were appended at the end.
 
 Buffer in memory:: Buffers the data in memory and then rewrites the header and cues. The cues are always inserted
 at the start, before the track data. To use this method:
