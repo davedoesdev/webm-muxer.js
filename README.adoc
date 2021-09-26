@@ -56,7 +56,7 @@ be able to monitor the video in this case.
 
 In your application, there are two Javascript files which you should run in Web Workers:
 
-link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`] and encodes it using WebCodecs https://www.w3.org/TR/webcodecs/#videoencoder-interface[`VideoEncoder`] or https://www.w3.org/TR/webcodecs/#audioencoder-interface[`AudioEncoder`]. You should run this in up to two Workers, one for video and one for audio.
+link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`] and encodes it using WebCodecs https://www.w3.org/TR/webcodecs/#videoencoder-interface[`VideoEncoder`] or https://www.w3.org/TR/webcodecs/#audioencoder-interface[`AudioEncoder`]. You should run this in up to two Workers, one for video and one for audio. If you have only video or audio, run `encoder-worker.js` in one worker.
 
 link:webm-worker.js[]:: Takes output from `encoder-worker.js` and muxes it into WebM container format.
 
@@ -64,26 +64,26 @@ You'll also need copy link:webm-muxer.js[] and link:webm-muxer.wasm[] to your ap
 
 Your application should in general follow the procedure described below.
 
-. Create your https://www.w3.org/TR/mediacapture-streams/#mediastreamtrack[`MediaStreamTrack`]s (e.g. using https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia[`getUserMedia()`].
+. Create your https://www.w3.org/TR/mediacapture-streams/#mediastreamtrack[`MediaStreamTrack`]s (e.g. using https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia[`getUserMedia()`]. You can have both video and audio tracks or just one.
 
-. Create up to two https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`]s, one for your video track and one for your audio track.
+. Create up to two https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`]s, one for each of your tracks.
 
 . Create a Web Worker using `webm-worker.js`.
 
-. Create up to two Web Workers using `encoder-worker.js`, one for video and one for audio.
+. Create up to two Web Workers using `encoder-worker.js`, one for each of your tracks.
 
 . When your application receives a message from the Worker running `webm-worker.js`:
 
 * If the message's `type` property is `start-stream` then:
 
-** Send a message to the Worker running `encoder-worker.js` for video with the following properties:
+** If you have a video track, send a message to the Worker running `encoder-worker.js` for video with the following properties:
 [horizontal]
 `type`:: `"start"`
 `readable`:: The `readable` property of the `MediaStreamTrackProcessor` for the video. You'll need to transfer this to the worker.
 `key_frame_interval`:: How often to generate a key frame, in seconds. Use `0` for no key frames.
 `config`:: The https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig[`VideoEncoderConfig`] for encoding the video.
 
-** Send a message to the Worker running `encoder-worker.js` for audio with the following properties:
+** If you have an audio track, send a message to the Worker running `encoder-worker.js` for audio with the following properties:
 [horizontal]
 `type`:: `"start"`
 `audio`:: `true`
