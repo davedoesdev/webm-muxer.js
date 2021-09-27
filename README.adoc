@@ -60,11 +60,11 @@ link:encoder-worker.js[]:: Takes output from https://w3c.github.io/mediacapture-
 
 link:webm-worker.js[]:: Takes output from `encoder-worker.js` and muxes it into WebM container format.
 
-You'll also need copy link:webm-muxer.js[] and link:webm-muxer.wasm[] to your application because `webm-worker.js` uses them.
+You'll also need to copy link:webm-muxer.js[] and link:webm-muxer.wasm[] to your application because `webm-worker.js` uses them.
 
 Your application should in general follow the procedure described below.
 
-. Create your https://www.w3.org/TR/mediacapture-streams/#mediastreamtrack[`MediaStreamTrack`]s (e.g. using https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia[`getUserMedia()`]. You can have both video and audio tracks or just one.
+. Create your https://www.w3.org/TR/mediacapture-streams/#mediastreamtrack[`MediaStreamTrack`]s (e.g. using https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia[`getUserMedia()`]). You can have both video and audio tracks or just one.
 
 . Create up to two https://w3c.github.io/mediacapture-transform/#track-processor[`MediaStreamTrackProcessor`]s, one for each of your tracks.
 
