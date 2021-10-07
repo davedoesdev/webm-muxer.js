@@ -100,6 +100,8 @@ start_el.addEventListener('click', async function () {
         width: video_settings.width,
         height: video_settings.height,
         bitrate: 2500 * 1000,
+        framerate: video_settings.frameRate,
+        latencyMode: 'realtime',
         /*avc: {
             format: 'annexb'
         }*/

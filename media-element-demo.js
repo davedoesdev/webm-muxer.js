@@ -55,6 +55,7 @@ async function start() {
 
     const video_track = video_el.captureStream().getVideoTracks()[0];
     const video_readable = (new MediaStreamTrackProcessor(video_track)).readable;
+    const video_settings = video_track.getSettings();
 
     const audio_track = audio_el.captureStream().getAudioTracks()[0];
     const audio_readable = (new MediaStreamTrackProcessor(audio_track)).readable;
@@ -123,7 +124,8 @@ async function start() {
                         codec: vp9_codec,
                         width: 1280,
                         height: 720,
-                        bitrate: 2500 * 1000
+                        bitrate: 2500 * 1000,
+                        framerate: video_settings.frameRate
                     }
                 }, [video_readable]);
 
