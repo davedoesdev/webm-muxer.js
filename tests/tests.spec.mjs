@@ -76,7 +76,7 @@ function polyfillShowSaveFilePicker() {
 }
 
 for (let pcm of [false, true]) {
-    test(`records to a vaild WebM file (pcm=${pcm})`, async ({ page }) => {
+    test(`records to a valid WebM file (pcm=${pcm})`, async ({ page }) => {
         await page.goto('demo.html');
         expect(await page.title()).toBe('WebM muxer demo');
         await page.check('#record');
