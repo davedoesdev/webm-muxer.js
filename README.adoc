@@ -21,7 +21,7 @@ webm-muxer.js is licensed under the terms of the link:LICENCE[MIT licence].
 
 == Demo
 
-You can see a demo https://rawgit-now.netlify.app/davedoesdev/webm-muxer.js/main/demo.html[here]
+You can see a demo http://rawgit.davedoesdev.com/davedoesdev/webm-muxer.js/main/demo.html[here]
 (tested on Chrome 95 Linux with `#enable-experimental-web-platform-features`).
 The source code for the demo is available in link:demo.html[] and link:demo.js[].
 
