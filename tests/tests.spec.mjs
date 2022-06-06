@@ -120,8 +120,8 @@ for (let codec of ['vp09', 'av01']) {
             expect(tracks.General.Encoded_Application).toBe('WebMLiveMuxer');
             expect(tracks.General.Encoded_Library).toBe('libwebm-0.3.0.0');
 
-            expect(tracks.Video.Format).toBe(codec === 'av01' : 'AV1' : 'VP9');
-            expect(tracks.Video.CodecID).toBe(codec === 'av01' : 'V_AV1' : 'V_VP9');
+            expect(tracks.Video.Format).toBe(codec === 'av01' ? 'AV1' : 'VP9');
+            expect(tracks.Video.CodecID).toBe(codec === 'av01' ? 'V_AV1' : 'V_VP9');
             if (tracks.Video.FrameRate_Mode === 'VFR') {
                 // mediainfo does VFR detection using timecodes so occasionally we trigger that detection
                 // https://github.com/MediaArea/MediaInfoLib/commit/f935443d48731c6524a69e8c25a04fcde9b4547d
@@ -173,10 +173,10 @@ for (let codec of ['vp09', 'av01']) {
             expect(info.track_tags.length).toBe(0);
             expect(info.tracks.length).toBe(2);
 
-            expect(info.tracks[0].codec).toBe(codec === 'av01' : 'AV1' : 'VP9');
+            expect(info.tracks[0].codec).toBe(codec === 'av01' ? 'AV1' : 'VP9');
             expect(info.tracks[0].id).toBe(0);
             expect(info.tracks[0].type).toBe('video');
-            expect(info.tracks[0].properties.codec_id).toBe(codec === 'av01' : 'V_AV1' : 'V_VP9');
+            expect(info.tracks[0].properties.codec_id).toBe(codec === 'av01' ? 'V_AV1' : 'V_VP9');
             expect(info.tracks[0].properties.codec_private_data).toBe('01010002010a030108040101');
             expect(info.tracks[0].properties.codec_private_length).toBe(12);
             if (info.identification_format_version >= 14) {
