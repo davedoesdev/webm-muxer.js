@@ -27,7 +27,7 @@ The source code for the demo is available in link:demo.html[] and link:demo.js[]
 
 When you click the *Start* button, you'll be asked by the browser to give permission to capture
 your camera and microphone. The data from each is then passed to two separate workers which
-encode the video into VP9 and audio into Opus using the WebCodecs browser API.
+encode the video into VP9 or AV1 and audio into Opus using the WebCodecs browser API.
 
 The encoded video and audio from each worker is passed into a third worker which muxes it into WebM format.
 
@@ -122,7 +122,7 @@ the muxer has flushed its buffers and sent back all the muxed data).
 `width`:::: Width of the encoded video in pixels.
 `height`:::: Height of the encoded video in pixels.
 `frame_rate`:::: Number of frames per second in the video. This property is optional.
-`codec_id`:::: WebM codec ID to describe the video encoding method, e.g. `"V_VP9"` or `"V_MPEG4/ISO/AVC"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
+`codec_id`:::: WebM codec ID to describe the video encoding method, e.g. `"V_VP9"`, `"V_AV1"` or `"V_MPEG4/ISO/AVC"`. See the https://www.matroska.org/technical/codec_specs.html[codec mappings page] for more values.
 `audio`::: If you have an audio track, an object with the following properties:
 +
 [horizontal]
