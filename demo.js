@@ -13,6 +13,7 @@ const stop_el = document.getElementById('stop');
 const record_el = document.getElementById('record');
 const pcm_el = document.getElementById('pcm');
 const inmem_el = document.getElementById('in-memory');
+const codec_el = document.getElementById('codec');
 let video_track, audio_track;
 
 const video = document.getElementById('video');
@@ -48,6 +49,22 @@ const vp9_params = {
 const vp9c = Object.fromEntries(Object.entries(vp9_params).map(
     ([k, v]) => [k, v.toString().padStart(2, '0')]));
 const vp9_codec = `vp09.${vp9c.profile}.${vp9c.level}.${vp9c.bit_depth}.${vp9c.chroma_subsampling}`;
+
+// See https://github.com/ietf-wg-cellar/matroska-specification/blob/master/codec/av1.md
+// and also https://aomediacodec.github.io/av1-isobmff/#codecsparam
+const av1_params = {
+    profile: 0,
+    level: 0,
+    tier: 0,
+    high_bitdepth: false,
+    twelve_bit: false,
+    monochrome: false,
+    chroma_subsampling_x: false,
+    chroma_subsampling_y: false,
+    chroma_sample_position: 0,
+};
+const av1_bitdepth = 8 + av1_params.high_bitdepth * (av1_params.profile === 2 && av1_params.twelve_bit ? 4 : 2)
+const av1_codec = `av01.${av1_params.profile}.${av1_params.level.toString().padStart(2, '0')}${av1_params.tier === 0 ? 'M' : 'H'}.${av1_bitdepth.toString().padStart(2, '0')}`;//.${av1_params.chroma_subsampling_x+0}${av1_params.chroma_subsampling_y+0}${av1_params.chroma_sample_position}`;
 
 start_el.addEventListener('click', async function () {
     this.disabled = true;
@@ -94,9 +111,11 @@ start_el.addEventListener('click', async function () {
     const video_readable = (new MediaStreamTrackProcessor(video_track)).readable;
     const video_settings = video_track.getSettings();
 
+    const codec = codec_el.options[codec_el.selectedIndex].value;
+
     const encoder_constraints = {
         //codec: 'avc1.42E01E',
-        codec: vp9_codec,
+        codec: codec === 'av01' ? av1_codec : vp9_codec,
         width: video_settings.width,
         height: video_settings.height,
         bitrate: 2500 * 1000,
@@ -280,8 +299,8 @@ start_el.addEventListener('click', async function () {
                     height: video_encoder_config.height,
                     frame_rate: video_settings.frameRate,
                     //codec_id: 'V_MPEG4/ISO/AVC'
-                    codec_id: 'V_VP9',
-                    ...vp9_params
+                    codec_id: codec === 'av01' ? 'V_AV1' : 'V_VP9',
+                    ...(codec === 'av01' ? av1_params : vp9_params)
                 },
                 audio: {
                     bit_depth: pcm_el.checked ? 32 : 0,
@@ -301,7 +320,7 @@ start_el.addEventListener('click', async function () {
     video.src = URL.createObjectURL(source);
 
     source.addEventListener('sourceopen', function () {
-        buffer = this.addSourceBuffer('video/webm; codecs=vp9,opus');
+        buffer = this.addSourceBuffer(`video/webm; codecs=${codec == 'av01' ? av1_codec : vp9_codec},opus`);
         buffer.addEventListener('updateend', remove_append);
         start();
     });
