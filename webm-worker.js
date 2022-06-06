@@ -192,6 +192,22 @@ function send_metadata(metadata) {
             view.setUint8(10, 1); // length
             view.setUint8(11, metadata.video.chrome_subsampling || 1);
             send_data(codec_private);
+        } else if (metadata.video.codec_id === 'V_AV1') {
+            // See https://github.com/ietf-wg-cellar/matroska-specification/blob/master/codec/av1.md#codecprivate-1
+            const codec_private = new ArrayBuffer(4);
+            const view = new DataView(codec_private);
+            view.setUint8(0, 0b10000001); // marker and version
+            view.setUint8(1, metadata.profile << 5 |
+                             metadata.level);
+            view.setUint8(2, metadata.tier << 7 |
+                             metadata.high_bitdepth << 6 |
+                             metadata.twelve_bit << 5 |
+                             metadata.monochrome << 4 |
+                             metadata.chroma_subsampling_x << 3 |
+                             metadata.chroma_subsampling_y << 2 |
+                             metadata.chroma_sample_position);
+            // leave byte 3 (initial_presentation_delay_*) as 0
+            send_data(codec_private);
         } else {
             send_data(new ArrayBuffer(0));
         }
