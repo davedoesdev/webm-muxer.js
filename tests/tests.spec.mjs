@@ -177,7 +177,7 @@ for (let codec of ['vp09', 'av01']) {
             expect(info.tracks[0].id).toBe(0);
             expect(info.tracks[0].type).toBe('video');
             expect(info.tracks[0].properties.codec_id).toBe(codec === 'av01' ? 'V_AV1' : 'V_VP9');
-            expect(info.tracks[0].properties.codec_private_data).toBe('01010002010a030108040101');
+            expect(info.tracks[0].properties.codec_private_data).toBe(codec === 'av01' ? '81000000' : '01010002010a030108040101');
             expect(info.tracks[0].properties.codec_private_length).toBe(12);
             if (info.identification_format_version >= 14) {
                 expect(info.tracks[0].properties.default_duration).toBe(Math.floor(1000000000 / 30)); // (1s / frame rate)
