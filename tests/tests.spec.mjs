@@ -84,7 +84,7 @@ for (let codec of ['vp09', 'av01']) {
             if (pcm) {
                 await page.click('#pcm');
             }
-            await page.selectOption('#start', codec);
+            await page.selectOption('#codec', codec);
             await page.evaluate(polyfillShowSaveFilePicker);
             await page.click('#start');
             let width, height;
