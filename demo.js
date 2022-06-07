@@ -14,6 +14,7 @@ const record_el = document.getElementById('record');
 const pcm_el = document.getElementById('pcm');
 const inmem_el = document.getElementById('in-memory');
 const codec_el = document.getElementById('codec');
+const chroma_el = document.getElementById('chroma');
 let video_track, audio_track;
 
 const video = document.getElementById('video');
@@ -38,35 +39,35 @@ record_el.addEventListener('input', function () {
 pcm_el.disabled = true;
 inmem_el.disabled = true;
 
-// See https://www.webmproject.org/vp9/mp4/
-// and also https://googlechrome.github.io/samples/media/vp9-codec-string.html
-const vp9_params = {
-    profile: 0,
-    level: 10,
-    bit_depth: 8,
-    chroma_subsampling: 1
-};
-const vp9c = Object.fromEntries(Object.entries(vp9_params).map(
-    ([k, v]) => [k, v.toString().padStart(2, '0')]));
-const vp9_codec = `vp09.${vp9c.profile}.${vp9c.level}.${vp9c.bit_depth}.${vp9c.chroma_subsampling}`;
-
-// See https://github.com/ietf-wg-cellar/matroska-specification/blob/master/codec/av1.md
-// and also https://aomediacodec.github.io/av1-isobmff/#codecsparam
-const av1_params = {
-    profile: 0,
-    level: 0,
-    tier: 0,
-    high_bitdepth: false,
-    twelve_bit: false,
-    monochrome: false,
-    chroma_subsampling_x: false,
-    chroma_subsampling_y: false,
-    chroma_sample_position: 0,
-};
-const av1_bitdepth = 8 + av1_params.high_bitdepth * (av1_params.profile === 2 && av1_params.twelve_bit ? 4 : 2)
-const av1_codec = `av01.${av1_params.profile}.${av1_params.level.toString().padStart(2, '0')}${av1_params.tier === 0 ? 'M' : 'H'}.${av1_bitdepth.toString().padStart(2, '0')}`;//.${av1_params.chroma_subsampling_x+0}${av1_params.chroma_subsampling_y+0}${av1_params.chroma_sample_position}`;
-
 start_el.addEventListener('click', async function () {
+    // See https://www.webmproject.org/vp9/mp4/
+    // and also https://googlechrome.github.io/samples/media/vp9-codec-string.html
+    const vp9_params = {
+        profile: 0,
+        level: 10,
+        bit_depth: 8,
+        chroma_subsampling: chroma.value ? 2 : 1
+    };
+    const vp9c = Object.fromEntries(Object.entries(vp9_params).map(
+        ([k, v]) => [k, v.toString().padStart(2, '0')]));
+    const vp9_codec = `vp09.${vp9c.profile}.${vp9c.level}.${vp9c.bit_depth}.${vp9c.chroma_subsampling}`;
+
+    // See https://github.com/ietf-wg-cellar/matroska-specification/blob/master/codec/av1.md
+    // and also https://aomediacodec.github.io/av1-isobmff/#codecsparam
+    const av1_params = {
+        profile: 0,
+        level: 0,
+        tier: 0,
+        high_bitdepth: false,
+        twelve_bit: false,
+        monochrome: false,
+        chroma_subsampling_x: !!chroma.value,
+        chroma_subsampling_y: !!chroma.value,
+        chroma_sample_position: 0,
+    };
+    const av1_bitdepth = 8 + av1_params.high_bitdepth * (av1_params.profile === 2 && av1_params.twelve_bit ? 4 : 2)
+    const av1_codec = `av01.${av1_params.profile}.${av1_params.level.toString().padStart(2, '0')}${av1_params.tier === 0 ? 'M' : 'H'}.${av1_bitdepth.toString().padStart(2, '0')}`;//.${av1_params.chroma_subsampling_x+0}${av1_params.chroma_subsampling_y+0}${av1_params.chroma_sample_position}`;
+
     this.disabled = true;
     record_el.disabled = true;
     pcm_el.disabled = true;
