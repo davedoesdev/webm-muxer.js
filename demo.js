@@ -46,7 +46,7 @@ start_el.addEventListener('click', async function () {
         profile: 0,
         level: 10,
         bit_depth: 8,
-        chroma_subsampling: chroma.value ? 2 : 1
+        chroma_subsampling: chroma_el.value ? 2 : 1
     };
     const vp9c = Object.fromEntries(Object.entries(vp9_params).map(
         ([k, v]) => [k, v.toString().padStart(2, '0')]));
@@ -61,8 +61,8 @@ start_el.addEventListener('click', async function () {
         high_bitdepth: false,
         twelve_bit: false,
         monochrome: false,
-        chroma_subsampling_x: !!chroma.value,
-        chroma_subsampling_y: !!chroma.value,
+        chroma_subsampling_x: !!chroma_el.value,
+        chroma_subsampling_y: !!chroma_el.value,
         chroma_sample_position: 0,
     };
     const av1_bitdepth = 8 + av1_params.high_bitdepth * (av1_params.profile === 2 && av1_params.twelve_bit ? 4 : 2)
