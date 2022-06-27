@@ -560,7 +560,7 @@ var EBMLReader = /** @class */ (function (_super) {
             this.emit("cluster_ptr", elm.tagStart);
             this.lastClusterPosition = elm.tagStart;
         }
-        else if (elm.type === "u" && elm.name === "Timecode") {
+        else if (elm.type === "u" && (elm.name === "Timecode" || elm.name === "Timestamp")) {
             this.lastClusterTimecode = elm.value;
         }
         else if (elm.type === "u" && elm.name === "TimecodeScale") {
