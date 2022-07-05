@@ -294,7 +294,7 @@ start_el.addEventListener('click', async function () {
             type: 'start',
             //webm_receiver: './test-receiver.js',
             webm_metadata: {
-                max_segment_duration: BigInt(1000000000),
+                max_cluster_duration: BigInt(2000000000),
                 video: {
                     width: video_encoder_config.width,
                     height: video_encoder_config.height,
@@ -321,7 +321,7 @@ start_el.addEventListener('click', async function () {
     video.src = URL.createObjectURL(source);
 
     source.addEventListener('sourceopen', function () {
-        buffer = this.addSourceBuffer(`video/webm; codecs=${codec == 'av01' ? av1_codec : vp9_codec},opus`);
+        buffer = this.addSourceBuffer(`video/webm; codecs=${codec === 'av01' ? av1_codec : vp9_codec},opus`);
         buffer.addEventListener('updateend', remove_append);
         start();
     });

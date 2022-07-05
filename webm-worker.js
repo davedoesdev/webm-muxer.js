@@ -51,7 +51,7 @@ function send_msg(msg) {
 
     const header = new ArrayBuffer(1);
     new DataView(header).setUint8(0,
-        (msg.type == 'video-data' ? video_type_flag : 0) |
+        (msg.type === 'video-data' ? video_type_flag : 0) |
         (msg.is_key ? key_flag : 0) |
         (msg.new_cluster ? new_cluster_flag : 0),
         true);
@@ -150,7 +150,7 @@ function send_msgs(opts) {
 
 function send_metadata(metadata) {
     const max_cluster_duration = new ArrayBuffer(8);
-    new DataView(max_cluster_duration).setBigUint64(0, metadata.max_segment_duration || BigInt(0), true);;
+    new DataView(max_cluster_duration).setBigUint64(0, metadata.max_cluster_duration || BigInt(0), true);;
     send_data(max_cluster_duration);
 
     const flags = new ArrayBuffer(1);

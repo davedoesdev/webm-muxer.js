@@ -115,7 +115,7 @@ the muxer has flushed its buffers and sent back all the muxed data).
 `webm_metadata`:: An object with the following properties:
 +
 [horizontal]
-`max_segment_duration`::: Desired length in nanoseconds of each WebM output chunk. Use a `BigInt` to specify this.
+`max_cluster_duration`::: Desired length in nanoseconds of each WebM output chunk. Use a `BigInt` to specify this.
 `video`::: If you have a video track, an object with the following properties:
 +
 [horizontal]

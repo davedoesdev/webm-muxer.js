@@ -13,7 +13,7 @@ onmessage = async function (e) {
             try {
                 const Encoder = msg.audio ? AudioEncoder : VideoEncoder;
                 const type = msg.audio ? 'audio-data' : 'video-data';
-                const key_frame_interval = msg.audio ? 0 : (msg.key_frame_interval * 1000);
+                const key_frame_interval = msg.audio ? 0 : (msg.key_frame_interval * 1000000);
                 let encoder;
                 if (msg.config.codec !== 'pcm') {
                     encoder = new Encoder({
@@ -78,11 +78,11 @@ onmessage = async function (e) {
                             }, [data]);
                         }
                     } else {
-                        const now = Date.now();
                         const keyFrame = (key_frame_interval > 0) &&
-                                         ((now - last_key_frame) > key_frame_interval);
+                                         ((last_key_frame < 0) ||
+                                          ((result.value.timestamp - last_key_frame) > key_frame_interval));
                         if (keyFrame) {
-                            last_key_frame = now;
+                            last_key_frame = result.value.timestamp;
                         }
                         encoder.encode(result.value, { keyFrame });
                     }
