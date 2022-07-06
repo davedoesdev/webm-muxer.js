@@ -11,6 +11,16 @@ onmessage = async function (e) {
     switch (msg.type) {
         case 'start':
             try {
+                let fps = 30
+                let frameCounter = 0
+
+                if (!msg.audio) {
+                    fps = msg.config.framerate
+
+                    if (!fps) {
+                        fps = 30
+                    }
+                }
                 const Encoder = msg.audio ? AudioEncoder : VideoEncoder;
                 const type = msg.audio ? 'audio-data' : 'video-data';
                 const key_frame_interval = msg.audio ? 0 : (msg.key_frame_interval * 1000000);
@@ -34,7 +44,6 @@ onmessage = async function (e) {
                 }
 
                 const reader = msg.readable.getReader();
-                let last_key_frame = -1;
 
                 while (true) {
                     const result = await reader.read();
@@ -78,13 +87,8 @@ onmessage = async function (e) {
                             }, [data]);
                         }
                     } else {
-                        const keyFrame = (key_frame_interval > 0) &&
-                                         ((last_key_frame < 0) ||
-                                          ((result.value.timestamp - last_key_frame) > key_frame_interval));
-                        if (keyFrame) {
-                            last_key_frame = result.value.timestamp;
-                        }
-                        encoder.encode(result.value, { keyFrame });
+                        frameCounter++
+                        encoder.encode(result.value, { keyFrame: (frameCounter % (fps * key_frame_interval) === 0) });
                     }
                     result.value.close();
                 }
