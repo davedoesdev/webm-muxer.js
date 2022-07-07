@@ -23,7 +23,7 @@ onmessage = async function (e) {
                 }
                 const Encoder = msg.audio ? AudioEncoder : VideoEncoder;
                 const type = msg.audio ? 'audio-data' : 'video-data';
-                const key_frame_interval = msg.audio ? 0 : (msg.key_frame_interval * 1000000);
+                const key_frame_interval = msg.audio ? 0 : (msg.key_frame_interval);
                 let encoder;
                 if (msg.config.codec !== 'pcm') {
                     encoder = new Encoder({
