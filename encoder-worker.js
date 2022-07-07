@@ -13,7 +13,18 @@ onmessage = async function (e) {
             try {
                 const Encoder = msg.audio ? AudioEncoder : VideoEncoder;
                 const type = msg.audio ? 'audio-data' : 'video-data';
-                const key_frame_interval = msg.audio ? 0 : (msg.key_frame_interval * 1000000);
+
+                let key_frame_interval = msg.audio ? 0 : msg.key_frame_interval;
+                if (key_frame_interval > 0) {
+                    if (msg.count_frames) {
+                        if (!msg.config.framerate) {
+                            throw new Error('framerate not configured');
+                        }
+                    } else {
+                        key_frame_interval *= 1000000;
+                    }
+                }
+
                 let encoder;
                 if (msg.config.codec !== 'pcm') {
                     encoder = new Encoder({
@@ -35,6 +46,7 @@ onmessage = async function (e) {
 
                 const reader = msg.readable.getReader();
                 let last_key_frame = -1;
+                let frame_count = 0;
 
                 while (true) {
                     const result = await reader.read();
@@ -78,11 +90,15 @@ onmessage = async function (e) {
                             }, [data]);
                         }
                     } else {
-                        const keyFrame = (key_frame_interval > 0) &&
-                                         ((last_key_frame < 0) ||
-                                          ((result.value.timestamp - last_key_frame) > key_frame_interval));
-                        if (keyFrame) {
-                            last_key_frame = result.value.timestamp;
+                        let keyFrame = false;
+                        if (key_frame_interval > 0) {
+                            if (msg.count_frames) {
+                                keyFrame = frame_count++ % (msg.config.framerate * key_frame_interval) == 0;
+                            } else if ((last_key_frame < 0) ||
+                                       ((result.value.timestamp - last_key_frame) > key_frame_interval)) {
+                                keyFrame = true;
+                                last_key_frame = result.value.timestamp;
+                            }
                         }
                         encoder.encode(result.value, { keyFrame });
                     }
