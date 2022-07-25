@@ -157,7 +157,7 @@ async function start() {
     webm_worker.postMessage({
         type: 'start',
         webm_metadata: {
-            max_segment_duration: BigInt(1000000000),
+            max_cluster_duration: BigInt(2000000000),
             video: {
                 width: 1280,
                 height: 720,

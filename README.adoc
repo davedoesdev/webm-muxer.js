@@ -81,6 +81,7 @@ Your application should in general follow the procedure described below.
 `type`:: `"start"`
 `readable`:: The `readable` property of the `MediaStreamTrackProcessor` for the video. You'll need to transfer this to the worker.
 `key_frame_interval`:: How often to generate a key frame, in seconds. Use `0` for no key frames.
+`count_frames`:: Use frame count rather than timestamp to determine key frame.
 `config`:: The https://www.w3.org/TR/webcodecs/#dictdef-videoencoderconfig[`VideoEncoderConfig`] for encoding the video.
 
 ** If you have an audio track, send a message to the Worker running `encoder-worker.js` for audio with the following properties:
@@ -115,7 +116,7 @@ the muxer has flushed its buffers and sent back all the muxed data).
 `webm_metadata`:: An object with the following properties:
 +
 [horizontal]
-`max_segment_duration`::: Desired length in nanoseconds of each WebM output chunk. Use a `BigInt` to specify this.
+`max_cluster_duration`::: Desired length in nanoseconds of each WebM output chunk. Use a `BigInt` to specify this.
 `video`::: If you have a video track, an object with the following properties:
 +
 [horizontal]
