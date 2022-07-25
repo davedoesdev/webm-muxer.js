@@ -97,7 +97,10 @@ start_el.addEventListener('click', async function () {
     }
 
     const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+        audio: {
+          echoCancellation: false,
+          channelCount: 2
+        },
         video: {
             width: 4096,
             height: 2160,
