@@ -5,6 +5,12 @@ mergeInto(LibraryManager.library, {
             self.stream_handler = null;
             self.stream_buf = null;
             self.stream_size = null;
+            self.statsTimer = setInterval(()=>{
+                self.postMessage({
+                    type: 'stats',
+                    data: {memory: HEAPU8.length} 
+                })
+            }, 1000)
             self.stream_process = function () {
                 if (self.stream_queue.length > 0) {
                     const head = self.stream_queue.shift();
