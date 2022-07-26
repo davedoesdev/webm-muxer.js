@@ -27,6 +27,7 @@ $(OUTPUTS): $(SOURCES_CC) $(LIBRARY_JS) $(LIBWEBM) $(HEADERS) Makefile
 		-s ASSERTIONS=0 \
 		-s EXIT_RUNTIME=1 \
 		-s TOTAL_MEMORY=67108864 \
+		-s ALLOW_MEMORY_GROWTH \
 		-s ASYNCIFY \
 		-s 'ASYNCIFY_IMPORTS=["emscripten_read_async"]' \
 		--js-library $(LIBRARY_JS) \
