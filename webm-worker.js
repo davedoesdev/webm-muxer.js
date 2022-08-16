@@ -341,6 +341,10 @@ onmessage = function (e) {
                     case 'muxed-data':
                         self.postMessage(msg2, [msg2.data]);
                         break;
+                    
+                    case 'stats':
+                        self.postMessage(msg2);
+                        break;
 
                     default:
                         self.postMessage(msg2, msg2.transfer);
