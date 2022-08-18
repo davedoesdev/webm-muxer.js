@@ -102,6 +102,11 @@ which your application can use as it likes.
 * If the message's `type` property is `exit` then the muxer has finished (all the tracks have finished,
 the muxer has flushed its buffers and sent back all the muxed data).
 
+* [[stats]] If the message's `type` property is `stats` then the `data` property contains an object with
+the following property:
+[horizontal]
+`memory`:: Size of the Emscripten/Web Assembly heap. This may grow for long-lived sessions.
+
 . When your application receives a message from one of the Workers running `encoder-worker.js`:
 
 * If the message's `type` property is `error` then an encoding error occurred and the `detail` property contains the error description.
@@ -164,6 +169,10 @@ Defaults to `false`, i.e. the timestamp of an audio chunk is set to sum of the d
 audio chunks. This is suitable for continuous audio but if you have intermittent audio, set this to `false`.
 +
 Note that I've found the duration method to be more accurate than the timestamps WebCodecs generates.
++
+`webm_stats_interval`:: If you specify this then the worker will repeately send a message with `type`
+property set to `stats`. The interval between each message will be the number of milliseconds specified.
+See <<stats>> for details of `stats` messages.
 
 . To stop muxing cleanly, wait for exit messages from all the Workers running `encoder-worker.js` and then send a message to the Worker running `webm-worker.js` with the following property:
 [horizontal]

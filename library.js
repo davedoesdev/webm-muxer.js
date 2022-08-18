@@ -5,12 +5,6 @@ mergeInto(LibraryManager.library, {
             self.stream_handler = null;
             self.stream_buf = null;
             self.stream_size = null;
-            self.statsTimer = setInterval(()=>{
-                self.postMessage({
-                    type: 'stats',
-                    data: {memory: HEAPU8.length} 
-                })
-            }, 1000)
             self.stream_process = function () {
                 if (self.stream_queue.length > 0) {
                     const head = self.stream_queue.shift();
@@ -27,6 +21,9 @@ mergeInto(LibraryManager.library, {
                 }
             };
             self.stream_exit = function (code) {
+                if (self.stats_timer) {
+                    clearInterval(self.stats_timer);
+                }
                 self.postMessage({
                     type: 'exit',
                     code
@@ -36,6 +33,14 @@ mergeInto(LibraryManager.library, {
                 const msg = e['data'];
                 switch (msg['type']) {
                     case 'start':
+                        if (msg['webm_stats_interval']) {
+                            self.stats_timer = setInterval(() => {
+                                self.postMessage({
+                                    type: 'stats',
+                                    data: {memory: HEAPU8.length}
+                                });
+                            }, msg['webm_stats_interval']);
+                        }
                         self.webm_receiver_data = msg['webm_receiver_data'];
                         if (msg['webm_receiver']) {
                             const MuxReceiver = (await import(msg['webm_receiver']))['MuxReceiver'];

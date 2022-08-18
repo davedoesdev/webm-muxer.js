@@ -248,6 +248,10 @@ start_el.addEventListener('click', async function () {
                 }
                 break;
 
+            case 'stats':
+                console.log(msg.data);
+                break;
+
             case 'error':
                 onerror(msg.detail);
                 break;
@@ -292,6 +296,7 @@ start_el.addEventListener('click', async function () {
     function start() {
         webm_worker.postMessage({
             type: 'start',
+            webm_stats_interval: 1000,
             //webm_receiver: './test-receiver.js',
             webm_metadata: {
                 max_cluster_duration: BigInt(2000000000),
