@@ -13,13 +13,14 @@ const config = {
     },
     reportSlowTests: {
         max: 0,
-        threshold: 60000
+        threshold: 5 * 60000
     },
     webServer: {
         command: 'npx serve',
         port: 3000,
         reuseExistingServer: false
-    }
+    },
+    timeout: 5 * 60000
 };
 
 export default config;
