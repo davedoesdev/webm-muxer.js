@@ -26,7 +26,7 @@ static int main2(int argc, const char** argv) {
     }
 
     webm_tools::WebMLiveMuxer muxer;
-    muxer.Init(max_cluster_duration);
+    muxer.Init(max_cluster_duration, false);
 
     // read flags
     uint8_t flags;

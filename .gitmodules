@@ -3,4 +3,4 @@
 	url = https://github.com/davedoesdev/webm-tools
 [submodule "libwebm"]
 	path = libwebm
-	url = https://github.com/webmproject/libwebm
+	url = https://github.com/davedoesdev/libwebm
