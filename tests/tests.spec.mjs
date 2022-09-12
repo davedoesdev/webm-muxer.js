@@ -147,11 +147,11 @@ for (let codec of ['vp09', 'av01']) {
                 expect(parseFloat(tracks.Audio.Duration)).toBeGreaterThanOrEqual(10);
                 expect(tracks.Audio.Channels).toBe('2');
                 if (!pcm) {
-                    expect(tracks.Audio.ChannelPositions).toBe('Front: C');
+                    expect(tracks.Audio.ChannelPositions).toBe('Front: L R');
                     expect(tracks.Audio.ChannelLayout).toBe('C');
                     expect(tracks.Audio.Compression_Mode).toBe('Lossy');
                 }
-                expect(tracks.Audio.SamplingRate).toBe('48000');
+                expect(tracks.Audio.SamplingRate).toBe('44100');
                 expect(parseFloat(tracks.Audio.Delay)).toBe(0);
 
                 ({ stdout, stderr } = await execFileP('mkvmerge', [ '-J', path ]));
