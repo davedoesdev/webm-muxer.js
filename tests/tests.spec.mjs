@@ -145,7 +145,7 @@ for (let codec of ['vp09', 'av01']) {
                 expect(tracks.Audio.Format).toBe(pcm ? 'PCM' : 'Opus');
                 expect(tracks.Audio.CodecID).toBe(pcm ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS');
                 expect(parseFloat(tracks.Audio.Duration)).toBeGreaterThanOrEqual(10);
-                expect(tracks.Audio.Channels).toBe('1');
+                expect(tracks.Audio.Channels).toBe('2');
                 if (!pcm) {
                     expect(tracks.Audio.ChannelPositions).toBe('Front: C');
                     expect(tracks.Audio.ChannelLayout).toBe('C');
