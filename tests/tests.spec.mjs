@@ -205,7 +205,7 @@ for (let codec of ['vp09', 'av01']) {
                 expect(info.tracks[1].properties.audio_sampling_frequency).toBe(44100);
                 expect(info.tracks[1].properties.codec_id).toBe(pcm ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS');
                 if (!pcm) {
-                    expect(info.tracks[1].properties.codec_private_data).toBe('4f707573486561640101000080bb0000000000');
+                    expect(info.tracks[1].properties.codec_private_data).toBe('4f707573486561640102000044ac0000000000');
                 }
                 expect(info.tracks[1].properties.codec_private_length).toBe(pcm ? 0 : 19);
                 expect(info.tracks[1].properties.default_track).toBe(true);
