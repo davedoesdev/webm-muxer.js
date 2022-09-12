@@ -148,7 +148,7 @@ for (let codec of ['vp09', 'av01']) {
                 expect(tracks.Audio.Channels).toBe('2');
                 if (!pcm) {
                     expect(tracks.Audio.ChannelPositions).toBe('Front: L R');
-                    expect(tracks.Audio.ChannelLayout).toBe('C');
+                    expect(tracks.Audio.ChannelLayout).toBe('L R');
                     expect(tracks.Audio.Compression_Mode).toBe('Lossy');
                 }
                 expect(tracks.Audio.SamplingRate).toBe('44100');
@@ -201,7 +201,7 @@ for (let codec of ['vp09', 'av01']) {
                 expect(info.tracks[1].codec).toBe(pcm ? 'PCM' : 'Opus');
                 expect(info.tracks[1].id).toBe(1);
                 expect(info.tracks[1].type).toBe('audio');
-                expect(info.tracks[1].properties.audio_channels).toBe(1);
+                expect(info.tracks[1].properties.audio_channels).toBe(2);
                 expect(info.tracks[1].properties.audio_sampling_frequency).toBe(48000);
                 expect(info.tracks[1].properties.codec_id).toBe(pcm ? 'A_PCM/FLOAT/IEEE' : 'A_OPUS');
                 if (!pcm) {
