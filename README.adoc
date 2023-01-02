@@ -10,6 +10,9 @@ Under the hood it uses https://github.com/webmproject/libwebm/[libwebm] and
 https://github.com/webmproject/webm-tools/[webmtools] compiled to Web Assembly using
 https://emscripten.org/[Emscripten].
 
+For a pure-TypeScript alternative to this project that doesn't use Web Assembly,
+see https://github.com/Vanilagy/webm-muxer[webm-muxer].
+
 == Requirements
 
 webm-muxer.js works on Chrome 95. The WebCodecs spec changes frequently so changes may
