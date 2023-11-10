@@ -122,7 +122,7 @@ for (let codec of ['vp09', 'av01']) {
                 expect(parseFloat(tracks.General.Duration)).toBeGreaterThanOrEqual(10);
                 expect(tracks.General.IsStreamable).toBe('Yes');
                 expect(tracks.General.Encoded_Application).toBe('WebMLiveMuxer');
-                expect(tracks.General.Encoded_Library).toBe('libwebm-0.3.0.0');
+                expect(tracks.General.Encoded_Library).toBe('libwebm-0.3.3.0');
 
                 expect(tracks.Video.Format).toBe(codec === 'av01' ? 'AV1' : 'VP9');
                 expect(tracks.Video.CodecID).toBe(codec === 'av01' ? 'V_AV1' : 'V_VP9');
@@ -165,7 +165,7 @@ for (let codec of ['vp09', 'av01']) {
                 expect(info.container.properties.container_type).toBe(17); // https://gitlab.com/mbunkus/mkvtoolnix/-/blob/main/src/common/file_types.h file_type_e::matroska
                 expect(info.container.properties.duration).toBeGreaterThanOrEqual(10000000000);
                 expect(info.container.properties.is_providing_timestamps).toBe(true);
-                expect(info.container.properties.muxing_application).toBe('libwebm-0.3.0.0');
+                expect(info.container.properties.muxing_application).toBe('libwebm-0.3.3.0');
                 expect(info.container.properties.writing_application).toBe('WebMLiveMuxer');
                 expect(info.container.recognized).toBe(true);
                 expect(info.container.supported).toBe(true);
