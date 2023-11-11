@@ -190,6 +190,7 @@ start_el.addEventListener('click', async function () {
                 video_worker.terminate();
                 audio_worker.terminate();
                 exited = true;
+                remove_append();
 
                 if (record_el.checked) {
                     const r = await writer.finish();
@@ -262,7 +263,7 @@ start_el.addEventListener('click', async function () {
     };
 
     function remove_append() {
-        if (buffer.updating) {
+        if (buffer && buffer.updating) {
             return;
         }
         if (exited) {

@@ -9,7 +9,8 @@ const config = {
         },
         contextOptions: {
             acceptDownloads: true
-        }
+        },
+        headless: true
     },
     reportSlowTests: {
         max: 0,

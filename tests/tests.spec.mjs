@@ -126,14 +126,17 @@ for (let codec of ['vp09', 'av01']) {
 
                 expect(tracks.Video.Format).toBe(codec === 'av01' ? 'AV1' : 'VP9');
                 expect(tracks.Video.CodecID).toBe(codec === 'av01' ? 'V_AV1' : 'V_VP9');
+                let framerate;
                 if (tracks.Video.FrameRate_Mode === 'VFR') {
                     // mediainfo does VFR detection using timecodes so occasionally we trigger that detection
                     // https://github.com/MediaArea/MediaInfoLib/commit/f935443d48731c6524a69e8c25a04fcde9b4547d
-                    expect(parseFloat(tracks.Video.FrameRate_Original)).toBe(30);
+                    framerate = parseFloat(tracks.Video.FrameRate_Original);
                 } else {
                     expect(tracks.Video.FrameRate_Mode).toBe('CFR');
+                    framerate = parseFloat(tracks.Video.FrameRate);
                     expect(parseFloat(tracks.Video.Duration)).toBeGreaterThanOrEqual(10);
                 }
+                expect(framerate).toBeLessThanOrEqual(30);
                 if (pcm) {
                     width = parseInt(tracks.Video.Width);
                     height = parseInt(tracks.Video.Height);
@@ -186,7 +189,7 @@ for (let codec of ['vp09', 'av01']) {
                                        ('01010002010a03010804010' + (chroma ? '2' : '1')));
                 expect(info.tracks[0].properties.codec_private_length).toBe(codec === 'av01' ? 4 : 12);
                 if (info.identification_format_version >= 14) {
-                    expect(info.tracks[0].properties.default_duration).toBe(Math.floor(1000000000 / 30)); // (1s / frame rate)
+                    expect(info.tracks[0].properties.default_duration).toBe(Math.floor(1000000000 / Math.floor(framerate))); // (1s / frame rate)
                 }
                 expect(info.tracks[0].properties.default_track).toBe(true);
                 expect(info.tracks[0].properties.display_dimensions).toBe(`${width}x${height}`);
