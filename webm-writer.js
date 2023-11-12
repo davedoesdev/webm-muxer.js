@@ -1,5 +1,5 @@
 // Adapted from https://github.com/muaz-khan/RecordRTC/blob/master/RecordRTC.js#L1906
-// Requires https://github.com/muaz-khan/RecordRTC/blob/master/libs/EBML.js
+// Requires https://github.com/davedoesdev/ts-ebml/blob/update-deps/dist/EBML.js
 // EBML.js copyright goes to: https://github.com/legokichi/ts-ebml
 
 export class WebMWriter {

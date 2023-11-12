@@ -234,6 +234,4 @@ in bytes and the `duration` property will contain the length of the recording in
 
 See link:demo.js[the demo] for an example of how to use `WebMWriter`.
 
-`WebMWriter` uses link:EBML.js[] to do the heavy lifting. `EBML.js` is a slightly modified version of the version made
-by https://github.com/muaz-khan/RecordRTC/blob/master/libs/EBML.js[RecordRTC], which in turn was generated from its
-original source at https://github.com/legokichi/ts-ebml[ts-ebml].
+`WebMWriter` uses link:EBML.js[] to do the heavy lifting. `EBML.js` is copied from https://github.com/davedoesdev/ts-ebml/blob/update-deps/dist/EBML.js[my fork] of https://github.com/legokichi/ts-ebml[ts-ebml].
