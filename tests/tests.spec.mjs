@@ -189,7 +189,7 @@ for (let codec of ['vp09', 'av01']) {
                                        ('01010002010a03010804010' + (chroma ? '2' : '1')));
                 expect(info.tracks[0].properties.codec_private_length).toBe(codec === 'av01' ? 4 : 12);
                 if (info.identification_format_version >= 14) {
-                    expect(info.tracks[0].properties.default_duration).toBe(Math.floor(1000000000 / Math.floor(framerate))); // (1s / frame rate)
+                    expect(info.tracks[0].properties.default_duration).toBe(Math.floor(1000000000 / Math.round(framerate))); // (1s / frame rate)
                 }
                 expect(info.tracks[0].properties.default_track).toBe(true);
                 expect(info.tracks[0].properties.display_dimensions).toBe(`${width}x${height}`);
